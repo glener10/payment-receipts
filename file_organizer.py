@@ -6,33 +6,24 @@ import argparse
 def extract_name_from_filename(filename):
     name_without_ext = os.path.splitext(filename)[0]
     parts = name_without_ext.split("-")
-
     if len(parts) >= 2:
-        return parts[-1]
-
+        return parts[-1].strip()
     return None
 
 
 def organize_files(source_dir, output_dir):
     os.makedirs(output_dir, exist_ok=True)
-
     for root, _, files in os.walk(source_dir):
         for filename in files:
             source_path = os.path.join(root, filename)
-
             try:
                 name = extract_name_from_filename(filename)
-
                 if not name:
                     continue
-
                 dest_folder = os.path.join(output_dir, name)
                 os.makedirs(dest_folder, exist_ok=True)
-
                 dest_path = os.path.join(dest_folder, filename)
-
                 shutil.move(source_path, dest_path)
-
             except Exception as e:
                 print(f"❌ Error: {filename} - {e}")
 
