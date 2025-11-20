@@ -75,9 +75,7 @@ sudo mount -t drvfs H: /mnt/h
 And link dataset in Google Drive to a folder in WSL2, in root folder use:
 
 ```cmd
-mkdir dataset
-
-ln -s "/mnt/h/Meu Drive/dataset/" dataset
+ln -s "/mnt/h/Meu Drive/dataset/" .
 ```
 
 ### Others users
@@ -88,14 +86,13 @@ The format is:
 
 ```
 dataset/
-└── dataset/
-    └── Glener Pizzolato/
-        └── nu/
-            └── comprovante_1.png
-    └── João/
-        └── xp/
-            └── comprovante_1.png
-            └── comprovante_2.pdf
+└── Glener Pizzolato/
+    └── nu/
+        └── comprovante_1.png
+└── João/
+    └── xp/
+        └── comprovante_1.png
+        └── comprovante_2.pdf
 ```
 
 <div id="using"></div>
