@@ -24,8 +24,6 @@
 
 ===================
 
-Attention! All sample receipt files are fake! ⚠️
-
 <div id="dependenciesandenvironment"></div>
 
 ## 💻 **Dependencies and Environment**
@@ -103,7 +101,9 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
-To understand how the development pipeline works, take a look at [this file](./docs/flow.excalidraw)
+To understand how the development pipeline works, take a look in the image below
+
+![flow](./docs/flow.png)
 
 ### 🔧 **Util - count.py**
 
@@ -191,7 +191,7 @@ src/config/coordinates/
 To create a new config use:
 
 ```bash
-python coordinates_config_setter.py -i 'PATH'
+python coordinates_config_setter.py -i 'INPUT_PATH'
 ```
 
 Steps:
@@ -212,6 +212,12 @@ This file is for organizing the receipts by name and then classifying them accor
 Running the components highlighted in blue in [this file](./docs/flow.excalidraw)
 
 Behind the scenes, we execute the scripts `file_organizer.py` and `receipt_organizer.py`.
+
+You exec using:
+
+```
+python pipeline.py -i 'INPUT_FOLDER_PATH' -o 'OUTPUT_FOLDER_PATH'
+```
 
 <div id="author"></div>
 
