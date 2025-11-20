@@ -268,6 +268,48 @@ Example output structure (same as input):
 │       └── receipt2-Maria.pdf (masked)
 ```
 
+### 🔧 **Util - guardrails.py**
+
+This script validates masked payment receipts using Gemini AI to detect any remaining visible sensitive data. It ensures all sensitive information is properly covered by black masks.
+
+Ensure your input folder contains masked files:
+
+```
+├── Joao/
+│   └── nu/
+│       └── receipt-Joao.png (masked)
+├── Maria/
+│   ├── inter/
+│   │   └── receipt-Maria.pdf (masked)
+│   └── sicredi/
+│       └── receipt2-Maria.pdf (masked)
+```
+
+To exec:
+
+```
+$ python guardrails.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
+```
+
+How it works:
+
+1. Scans all files in the input directory
+2. Uses Gemini AI to verify if sensitive data is visible (names, CPF, Pix keys, account numbers, etc.)
+3. Files that pass validation (no visible sensitive data) are **moved** to the output directory
+4. Files that fail validation (sensitive data still visible) remain in the input directory
+5. Empty directories in the input folder are automatically removed
+
+Example output structure (only validated files):
+
+```
+├── Joao/
+│   └── nu/
+│       └── receipt-Joao.png (validated)
+├── Maria/
+│   └── sicredi/
+│       └── receipt2-Maria.pdf (validated)
+```
+
 ### 🌀 **Pipeline - pipeline.py**
 
 This file is for organizing the receipts by name and then classifying them according to which bank they belong to.
