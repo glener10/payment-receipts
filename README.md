@@ -101,29 +101,107 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
-### receipt_organizer
+## ☕ **Using**
+
+### 🔧 **Util - file_organizer.py**
+
+The result of the Google form search is a folder containing all the collected files in this format:
+
+FILE_NAME-NAME_SENDER.EXTENSION
+
+Exec with:
+
+```
+$ python file_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
+```
+
+Example output structure:
+
+```
+OUTPUT_FOLDER_PATH/
+├── John/
+│   ├── receipt1-john.pdf
+│   └── receipt2-john.png
+├── maria/
+│   └── receipt-maria.jpg
+└── pedro/
+    ├── receiptpix-pedro.pdf
+    └── receipt-pedro.jpeg
+```
+
+### 🔧 **Util - receipt_organizer.py**
 
 Use this script to enter a folder, read all the receipts, and use Gemini to identify which bank each receipt is from, moving the files to a categorized output
 
 ```
-$ python receipt_organizer.py -p "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
+$ python receipt_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
 ```
 
-### count
+Example output structure:
+
+```
+OUTPUT_FOLDER_PATH/
+├── nubank/
+│   ├── receipt1.pdf
+│   ├── receipt2.png
+│   └── receipt3.jpg
+├── inter/
+│   ├── comprovante1.pdf
+│   └── comprovante2.jpeg
+├── itau/
+│   └── pix-receipt.png
+└── bradesco/
+    ├── boleto1.pdf
+    └── transferencia.jpg
+```
+
+### 🔧 **Util - count.py**
 
 To count how many payment receipts we have in
 
 ```
-$ python count.py
+$ python count.py -i 'INPUT_FOLDER_PATH'
 ```
 
-### coordinates_config_setter.py
+### 🔧 **Util - coordinates_config_setter.py**
 
-Use this script to save all coordinates of sensitive data of an payment receipt
+This system masks sensitive data on payment receipts using template matching. It compares the visual structure of each file with pre-configured templates and applies the corresponding masking coordinates.
 
-### DEPRECATED_sensitive_data_masker
+Folder structure for new coordinates configs
 
-We dont have good result in here
+```
+src/config/coordinates/
+├── nu/
+│   ├── coordinates_output_a.json
+│   ├── coordinates_output_a.png
+│   ├── coordinates_output_b.json
+│   └── coordinates_output_b.png
+├── bradesco/
+│   ├── coordinates_output_a.json
+│   └── coordinates_output_a.png
+└── [others]/
+    └── ...
+```
+
+-   **`.json`**: Coordinates of sensitive areas
+-   **`.png`**: Reference image (masked)
+
+To create a new config use:
+
+```bash
+python coordinates_config_setter.py -i 'PATH'
+```
+
+Steps:
+
+1. Draw rectangles over the sensitive data
+2. Press **'q'** to exit
+3. The following will be generated:
+
+-   `coordinates_output.json` - coordinates
+-   `coordinates_output.png` - masked image
+
+move files to `src/config/coordinates/BANK/`
 
 <div id="author"></div>
 

@@ -11,7 +11,7 @@ from src.modules.classify.args import get_args
 
 async def main():
     args = get_args()
-    real_path = os.path.realpath(args.path)
+    real_path = os.path.realpath(args.input)
 
     print("preparing promises of all files")
     all_files_promises = get_promises_of_all_files_to_find_out_bank_of_payment_receipts(

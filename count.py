@@ -151,20 +151,19 @@ def main():
 
             Usage examples:
                 python count.py
-                python count.py -p /path/to/receipts
+                python count.py -i /path/to/receipts
         """,
     )
 
     parser.add_argument(
-        "-p",
-        "--path",
+        "-i",
+        "--input",
         default="dataset",
-        help="Path to root folder (default: dataset)",
+        help="Input path to root folder (default: dataset)",
     )
 
     args = parser.parse_args()
-    root_path = os.path.abspath(args.path)
-
+    root_path = os.path.abspath(args.input)
     print(f"🔍 Analyzing hierarchical structure at: {root_path}")
 
     data = analyze_hierarchical_structure(root_path)
