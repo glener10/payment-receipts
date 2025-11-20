@@ -223,6 +223,51 @@ Steps:
 
 move files to `src/config/coordinates/BANK/`
 
+### 🔧 **Util - sensitive_data_masker.py**
+
+This script masks sensitive data in payment receipts using coordinate templates. It automatically identifies the bank from the folder structure and applies the appropriate masking coordinates.
+
+Ensure your input folder structure is as follows:
+
+```
+├── Joao/
+│   └── nu/
+│       └── receipt-Joao.png
+├── Maria/
+│   ├── inter/
+│   │   └── receipt-Maria.pdf
+│   └── sicredi/
+│       └── receipt2-Maria.pdf
+```
+
+To exec:
+
+```
+$ python sensitive_data_masker.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
+```
+
+How it works:
+
+1. Extracts the bank name from the folder structure (e.g., `Joao/nu/` → bank: `nu`)
+2. Loads templates only for that specific bank from `src/config/coordinates/BANK/`
+3. Filters templates by file type (images or PDFs)
+4. Uses Gemini AI to compare the input file with all templates of that bank
+5. Selects the template with highest confidence (≥85%)
+6. Scales coordinates if needed and applies black masks to sensitive areas
+
+Example output structure (same as input):
+
+```
+├── Joao/
+│   └── nu/
+│       └── receipt-Joao.png (masked)
+├── Maria/
+│   ├── inter/
+│   │   └── receipt-Maria.pdf (masked)
+│   └── sicredi/
+│       └── receipt2-Maria.pdf (masked)
+```
+
 ### 🌀 **Pipeline - pipeline.py**
 
 This file is for organizing the receipts by name and then classifying them according to which bank they belong to.
