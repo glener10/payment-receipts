@@ -109,6 +109,21 @@ To understand how the development pipeline works, take a look in the image below
 
 To count how many payment receipts we have in
 
+Ensure that the database structure is as follows:
+
+```
+├── Joao/
+│   └── nu/
+│       └── receipt-Joao.png
+├── Maria/
+│   ├── inter/
+│   │   └── receipt-Maria.pdf
+│   └── sicredi/
+│       └── receipt2-Maria.pdf
+```
+
+To exec:
+
 ```
 $ python count.py -i 'INPUT_FOLDER_PATH'
 ```
@@ -128,20 +143,28 @@ $ python file_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
 Example output structure:
 
 ```
-OUTPUT_FOLDER_PATH/
-├── John/
-│   ├── receipt1-john.pdf
-│   └── receipt2-john.png
-├── maria/
-│   └── receipt-maria.jpg
-└── pedro/
-    ├── receiptpix-pedro.pdf
-    └── receipt-pedro.jpeg
+├── Joao/
+│   └── receipt-Joao.png
+├── Maria/
+│   ├── receipt-Maria.pdf
+│   └── receipt2-Maria.pdf
 ```
 
 ### 🔧 **Util - receipt_organizer.py**
 
 Use this script to enter a folder, read all the receipts, and use Gemini to identify which bank each receipt is from, moving the files to a categorized output
+
+Ensure your input folder structure is as follows:
+
+```
+├── Joao/
+│   └── receipt-Joao.png
+├── Maria/
+│   ├── receipt-Maria.pdf
+│   └── receipt2-Maria.pdf
+```
+
+To exec:
 
 ```
 $ python receipt_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
@@ -150,19 +173,14 @@ $ python receipt_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
 Example output structure:
 
 ```
-OUTPUT_FOLDER_PATH/
-├── nubank/
-│   ├── receipt1.pdf
-│   ├── receipt2.png
-│   └── receipt3.jpg
-├── inter/
-│   ├── comprovante1.pdf
-│   └── comprovante2.jpeg
-├── itau/
-│   └── pix-receipt.png
-└── bradesco/
-    ├── boleto1.pdf
-    └── transferencia.jpg
+├── Joao/
+│   └── nu/
+│       └── receipt-Joao.png
+├── Maria/
+│   ├── inter/
+│   │   └── receipt-Maria.pdf
+│   └── sicredi/
+│       └── receipt2-Maria.pdf
 ```
 
 ### 🔧 **Util - coordinates_config_setter.py**
