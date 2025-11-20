@@ -1,147 +1,76 @@
+import json
 import os
-import cv2
+from dotenv import load_dotenv
 
-from src.modules.sensitive_data_masker.matcher import (
-    load_coordinate_templates,
-    find_matching_template,
-    scale_coordinates,
+
+import google.generativeai as genai
+from google.generativeai import types
+from pathlib import Path
+
+load_dotenv()
+gemini_api_key = os.getenv("GEMINI_API_KEY")
+
+genai.configure(api_key=gemini_api_key)
+gemini_client = genai.GenerativeModel(
+    model_name="gemini-2.5-flash",
+    generation_config=types.GenerationConfig(
+        response_mime_type="application/json",
+    ),
 )
-from src.modules.sensitive_data_masker.masking import (
-    apply_mask_to_image,
-    apply_mask_to_pdf,
-    generate_output_path,
-)
-from src.utils.mime_type import get_mime_type
 
 
-def process_file_with_templates(file_path: str, templates: dict, output_dir: str):
-    """
-    Process a single file: find matching template and apply masking
-
-    Args:
-        file_path: Path to the file to process
-        templates: Dictionary of coordinate templates
-        output_dir: Output directory for masked files
-
-    Returns:
-        dict: Result with 'path', 'status', 'bank', 'template', 'similarity'
-    """
+def compare_with_gemini(template_path, input_path, bank_name, template_name):
     try:
-        # Find matching template using Gemini AI with 90% confidence threshold
-        match = find_matching_template(file_path, templates, threshold=0.95)
+        prompt = f"""Você é um especialista em análise de documentos bancários.
 
-        if not match:
-            return {
-                "path": file_path,
-                "status": "no_match",
-                "bank": None,
-                "template": None,
-                "similarity": 0,
-            }
+Analise as duas imagens fornecidas e determine se elas têm o MESMO FORMATO/LAYOUT de comprovante bancário.
 
-        # Get coordinates from template
-        template_coords = match["template"]["coordinates"]
+IMPORTANTE:
+- A primeira imagem (referência) pode ter dados mascarados com tarjas pretas - IGNORE essas tarjas
+- Compare apenas a ESTRUTURA, LAYOUT e FORMATO do documento
+- Verifique se são do mesmo banco/instituição financeira
+- Os VALORES dos dados podem ser diferentes - isso é NORMAL
+- Foque na similaridade do DESIGN e ESTRUTURA
 
-        # Load input image to get dimensions
-        input_image = cv2.imread(file_path)
-        if input_image is None:
-            return {
-                "path": file_path,
-                "status": "error",
-                "error": "Could not load image",
-                "bank": match["bank"],
-                "template": match["template"]["name"],
-                "similarity": match["similarity"],
-            }
+Banco esperado: {bank_name}
+Template: {template_name}
 
-        # Get dimensions
-        input_height, input_width = input_image.shape[:2]
-        ref_image = match["template"]["reference_image"]
-        ref_height, ref_width = ref_image.shape[:2]
+Retorne um JSON com:
+{{
+    "is_match": true/false,
+    "confidence": 0.0-1.0,
+    "reason": "explicação detalhada"
+}}
 
-        # Scale coordinates if dimensions differ
-        if input_width != ref_width or input_height != ref_height:
-            coordinates = scale_coordinates(
-                template_coords, ref_width, ref_height, input_width, input_height
-            )
-        else:
-            coordinates = template_coords
+Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%)."""
 
-        # Generate output path
-        output_path = generate_output_path(file_path, output_dir)
+        with open(template_path, "rb") as f:
+            template_data = f.read()
+        with open(input_path, "rb") as f:
+            input_data = f.read()
 
-        # Apply masking based on file type
-        _, ext = os.path.splitext(file_path)
-        ext_lower = ext.lower()
+        template_ext = Path(template_path).suffix.lower()
+        input_ext = Path(input_path).suffix.lower()
 
-        success = False
-        if ext_lower in [".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff"]:
-            success = apply_mask_to_image(file_path, coordinates, output_path)
-        elif ext_lower == ".pdf":
-            success = apply_mask_to_pdf(file_path, coordinates, output_path)
+        mime_map = {
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".png": "image/png",
+            ".pdf": "application/pdf",
+        }
 
-        if success:
-            return {
-                "path": file_path,
-                "status": "success",
-                "bank": match["bank"],
-                "template": match["template"]["name"],
-                "similarity": match["similarity"],
-                "output_path": output_path,
-            }
-        else:
-            return {
-                "path": file_path,
-                "status": "error",
-                "error": "Masking failed",
-                "bank": match["bank"],
-                "template": match["template"]["name"],
-                "similarity": match["similarity"],
-            }
+        template_mime = mime_map.get(template_ext, "image/jpeg")
+        input_mime = mime_map.get(input_ext, "image/jpeg")
+
+        contents = [
+            prompt,
+            {"mime_type": template_mime, "data": template_data},
+            {"mime_type": input_mime, "data": input_data},
+        ]
+
+        response = gemini_client.generate_content(contents=contents)
+        result = json.loads(response.text)
+        return result
 
     except Exception as e:
-        print(f"❌ Error processing {file_path}: {e}")
-        return {"path": file_path, "status": "error", "error": str(e)}
-
-
-async def process_files_with_coordinate_matching(real_path: str, output_dir: str):
-    """
-    Process all files in a directory using coordinate template matching
-
-    Args:
-        real_path: Path to directory containing files to process
-        output_dir: Output directory for masked files
-
-    Returns:
-        dict: Statistics about the processing
-    """
-    print("\n📂 Loading coordinate templates...")
-    templates = load_coordinate_templates()
-
-    if not templates:
-        print("❌ No coordinate templates found!")
-        return {"total": 0, "success": 0, "no_match": 0, "error": 0}
-
-    results = []
-    stats = {"total": 0, "success": 0, "no_match": 0, "error": 0}
-
-    print(f"\n🔍 Processing files from: {real_path}\n")
-
-    # Process all files in directory
-    for root, _, files in os.walk(real_path, followlinks=True):
-        for file in files:
-            mime_type = get_mime_type(file)
-
-            if not mime_type:
-                continue
-
-            file_path = os.path.join(root, file)
-            stats["total"] += 1
-
-            result = process_file_with_templates(file_path, templates, output_dir)
-            results.append(result)
-
-            # Update stats
-            stats[result["status"]] += 1
-
-    return stats
+        return {"is_match": False, "confidence": 0.0, "reason": f"Error: {str(e)}"}
