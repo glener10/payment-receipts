@@ -54,6 +54,8 @@ $ make clean
 
 ## 🔑 **Dataset**
 
+Attention! Take one backup before execute any test
+
 ### Specified for author
 
 You save dataset in google drive and link folder in repository to then
