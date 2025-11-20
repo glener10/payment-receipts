@@ -1,6 +1,16 @@
+import datetime
 import subprocess
 import argparse
 import os
+import shutil
+
+
+def remove_empty_dirs(root_dir):
+    for dirpath, dirnames, filenames in os.walk(root_dir, topdown=False):
+        for dirname in dirnames:
+            full_path = os.path.join(dirpath, dirname)
+            if not os.listdir(full_path):
+                os.rmdir(full_path)
 
 
 def main():
@@ -24,6 +34,9 @@ def main():
 
     temp_organized = "z_temp_organized"
 
+    print(
+        f"pipeline: executing file_organizer.py to organize files {args.input} into {temp_organized}"
+    )
     subprocess.run(
         f"python file_organizer.py -i '{args.input}' -o '{temp_organized}'",
         shell=True,
@@ -34,12 +47,26 @@ def main():
         person_path = os.path.join(temp_organized, person_folder)
         if os.path.isdir(person_path):
             output_person_path = os.path.join(args.output, person_folder)
+            print(
+                f"pipeline: executing receipt_organizer.py to organize files {person_path} into {output_person_path}"
+            )
             subprocess.run(
                 f"python receipt_organizer.py -i '{person_path}' -o '{output_person_path}'",
                 shell=True,
                 check=True,
             )
 
+    print(f"pipeline: cleaning up temporary directory {temp_organized}")
+    remove_empty_dirs(temp_organized)
+    shutil.rmtree(temp_organized)
+
 
 if __name__ == "__main__":
+    start_time = datetime.datetime.now()
+    print(f"pipeline: 🚀 starting process at {start_time}")
+
     main()
+
+    end_time = datetime.datetime.now()
+    total_time = end_time - start_time
+    print(f"pipeline: ✅  execution finished. Total time: {total_time}")

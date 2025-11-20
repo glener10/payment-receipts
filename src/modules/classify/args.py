@@ -13,7 +13,7 @@ def get_args():
         "-o",
         "--output",
         required=False,
-        default="classify_output",
+        default="z_output",
         help="output path",
     )
     args = parser.parse_args()

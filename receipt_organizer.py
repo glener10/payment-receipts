@@ -21,7 +21,7 @@ async def main():
     )
     results_from_models = await asyncio.gather(*all_files_promises)
 
-    print("receipt_organizer: moving files to")
+    print(f"receipt_organizer: moving files to {args.output}")
     move_files_to_specified_bank_folders(results_from_models, args.output)
 
 
