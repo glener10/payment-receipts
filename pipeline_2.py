@@ -1,8 +1,27 @@
 import datetime
 import subprocess
 import argparse
+import os
 
 from src.utils.dirs import remove_empty_dirs
+
+
+def remove_processed_files(input_dir, output_dir):
+    """
+    Remove files from input directory that successfully reached output directory
+
+    Args:
+        input_dir: Source directory to remove files from
+        output_dir: Directory with successfully processed files
+    """
+    for root, _, files in os.walk(output_dir):
+        for file in files:
+            output_file_path = os.path.join(root, file)
+            rel_path = os.path.relpath(output_file_path, output_dir)
+            input_file_path = os.path.join(input_dir, rel_path)
+
+            if os.path.exists(input_file_path):
+                os.remove(input_file_path)
 
 
 def main():
@@ -44,6 +63,8 @@ def main():
         check=True,
     )
 
+    remove_processed_files(args.input, args.output)
+    remove_empty_dirs(args.input)
     remove_empty_dirs(temp_masked_dir)
 
 
