@@ -103,6 +103,8 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
+To understand how the development pipeline works, take a look at [this file](./docs/flow.excalidraw)
+
 ## ☕ **Using**
 
 ### 🔧 **Util - file_organizer.py**
