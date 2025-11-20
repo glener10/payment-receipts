@@ -27,8 +27,8 @@ def process_file_with_templates(file_path: str, templates: dict, output_dir: str
         dict: Result with 'path', 'status', 'bank', 'template', 'similarity'
     """
     try:
-        # Find matching template using Gemini AI with 85% confidence threshold
-        match = find_matching_template(file_path, templates, threshold=0.85)
+        # Find matching template using Gemini AI with 90% confidence threshold
+        match = find_matching_template(file_path, templates, threshold=0.95)
 
         if not match:
             return {
@@ -64,9 +64,6 @@ def process_file_with_templates(file_path: str, templates: dict, output_dir: str
             coordinates = scale_coordinates(
                 template_coords, ref_width, ref_height, input_width, input_height
             )
-            print(
-                f"   📏 Scaled coordinates from {ref_width}x{ref_height} to {input_width}x{input_height}"
-            )
         else:
             coordinates = template_coords
 
@@ -84,7 +81,6 @@ def process_file_with_templates(file_path: str, templates: dict, output_dir: str
             success = apply_mask_to_pdf(file_path, coordinates, output_path)
 
         if success:
-            print(f"   ✅ Masked file saved to: {output_path}")
             return {
                 "path": file_path,
                 "status": "success",
@@ -142,7 +138,6 @@ async def process_files_with_coordinate_matching(real_path: str, output_dir: str
             file_path = os.path.join(root, file)
             stats["total"] += 1
 
-            print(f"\n📄 Processing: {os.path.basename(file_path)}")
             result = process_file_with_templates(file_path, templates, output_dir)
             results.append(result)
 

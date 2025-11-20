@@ -17,16 +17,23 @@ async def main():
 
     stats = await process_files_with_coordinate_matching(real_path, output_dir)
 
-    # Print statistics
     print(f"\n{'=' * 60}")
-    print("📊 Processing Statistics")
+    print("📊 MASKING SUMMARY")
     print(f"{'=' * 60}")
     print(f"Total files processed: {stats['total']}")
     print(f"✅ Successfully masked: {stats['success']}")
     print(f"⚠️  No matching template: {stats['no_match']}")
     print(f"❌ Errors: {stats['error']}")
     print(f"{'=' * 60}")
-    print(f"\n✅ Masking completed! Files saved to: {output_dir}")
+
+    if stats["success"] > 0:
+        print(f"\n✅ Masking completed! Files saved to: {output_dir}")
+    elif stats["no_match"] > 0:
+        print(
+            "\n⚠️  No matches found. Consider creating templates for these file formats."
+        )
+    else:
+        print("\n❌ Processing failed. Check the errors above.")
 
 
 if __name__ == "__main__":
