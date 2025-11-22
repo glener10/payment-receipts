@@ -54,12 +54,8 @@ def perform_sortition(user_files):
 
     random.shuffle(weighted_pool)
 
-    selected_users = set()
-    for entry in weighted_pool:
-        if entry not in selected_users:
-            return entry
-
-    return None
+    selected_index = random.randint(0, len(weighted_pool) - 1)
+    return weighted_pool[selected_index]
 
 
 def main():
