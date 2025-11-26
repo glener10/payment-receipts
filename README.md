@@ -310,18 +310,18 @@ Example output structure (only validated files):
 │       └── receipt2-Maria.pdf (validated)
 ```
 
-### 🌀 **Pipeline - pipeline.py**
+### 🌀 **Pipeline - pipeline_organization.py**
 
 This file is for organizing the receipts by name and then classifying them according to which bank they belong to.
 
-Running the components highlighted in blue in [this file](./docs/flow.excalidraw)
+Running the components highlighted in [this file](./docs/pipeline_organization.excalidraw)
 
 Behind the scenes, we execute the scripts `file_organizer.py` and `receipt_organizer.py`.
 
 You exec using:
 
 ```
-python pipeline.py -i 'INPUT_FOLDER_PATH' -o 'OUTPUT_FOLDER_PATH'
+python pipeline_organization.py -i 'INPUT_FOLDER_PATH' -o 'OUTPUT_FOLDER_PATH'
 ```
 
 ### 🌀 **Pipeline - pipeline_2.py**
