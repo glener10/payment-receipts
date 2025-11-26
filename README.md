@@ -28,7 +28,15 @@
 
 ## 💻 **Dependencies and Environment**
 
-**Gemini**: This project uses the paid Google Gemini API, it's necessary to [configure a valid Gemini API Key](https://aistudio.google.com/apikey). Ensure you have a `.env` file with the environment variable **GEMINI_API_KEY**.
+**Gemini (Optional)**: This project can use the paid Google Gemini API for image comparison. However, **be cautious about sharing sensitive data from receipts**. If you choose to use Gemini, [configure a valid Gemini API Key](https://aistudio.google.com/apikey) and ensure you have a `.env` file with the environment variable **GEMINI_API_KEY**.
+
+**Ollama (Recommended)**: Alternatively, install [Ollama](https://ollama.com/) and run:
+
+```
+$ ollama run deepseek-r1:1.5b
+```
+
+This model yielded good results, but feel free to test others.
 
 To setup environment use (you will need [venv](https://docs.python.org/pt-br/3.13/library/venv.html)):
 
