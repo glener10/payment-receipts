@@ -101,9 +101,7 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
-To understand how the development pipeline works, take a look in the image below
-
-![flow](./docs/flow.png)
+To understand how the development pipeline works, take a look in the `.excalidraw` files in `docs/`
 
 ### 🔧 **Util - count.py**
 
@@ -324,9 +322,11 @@ You exec using:
 python pipeline_organization.py -i 'INPUT_FOLDER_PATH' -o 'OUTPUT_FOLDER_PATH'
 ```
 
-### 🌀 **Pipeline - pipeline_2.py**
+### 🌀 **Pipeline - pipeline_masking.py**
 
 This pipeline combines masking and validation of payment receipts. It executes `sensitive_data_masker.py` followed by `guardrails.py` to ensure only properly masked files reach the final output.
+
+Running the components highlighted in [this file](./docs/pipeline_masking.excalidraw)
 
 Ensure your input folder structure is as follows:
 
