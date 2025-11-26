@@ -3,12 +3,13 @@ import json
 import cv2
 
 from src.modules.sensitive_data_masker.gemini import compare_with_gemini
+from src.modules.sensitive_data_masker.deepseek import compare_with_deepseek
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 PDF_EXTENSION = ".pdf"
 
 
-def find_best_template(input_path, bank_name, min_confidence=0.85):
+def find_best_template(input_path, bank_name, min_confidence=0.85, use_deepseek=False):
     _, file_ext = os.path.splitext(input_path)
     templates = load_bank_templates(bank_name, file_ext)
 
@@ -18,8 +19,10 @@ def find_best_template(input_path, bank_name, min_confidence=0.85):
     best_match = None
     best_confidence = 0.0
 
+    compare_function = compare_with_deepseek if use_deepseek else compare_with_gemini
+
     for template in templates:
-        result = compare_with_gemini(
+        result = compare_function(
             template["reference_path"], input_path, bank_name, template["name"]
         )
 

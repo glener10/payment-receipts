@@ -18,5 +18,10 @@ def get_args():
         default="classify_output",
         help="output path",
     )
+    parser.add_argument(
+        "--deepseek",
+        action="store_true",
+        help="use local DeepSeek model via Ollama instead of Gemini (better privacy)",
+    )
     args = parser.parse_args()
     return args

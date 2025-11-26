@@ -10,7 +10,9 @@ from src.modules.sensitive_data_masker.masking import (
 )
 
 
-async def process_files_with_coordinate_matching(input_path: str, output_dir: str):
+async def process_files_with_coordinate_matching(
+    input_path: str, output_dir: str, use_deepseek: bool = False
+):
     for root, _, files in os.walk(input_path):
         for file in files:
             _, ext = os.path.splitext(file)
@@ -23,10 +25,10 @@ async def process_files_with_coordinate_matching(input_path: str, output_dir: st
                 continue
 
             file_path = os.path.join(root, file)
-            process_file(file_path, input_path, output_dir)
+            process_file(file_path, input_path, output_dir, use_deepseek)
 
 
-def process_file(file_path, base_input_path, output_dir):
+def process_file(file_path, base_input_path, output_dir, use_deepseek=False):
     person_name, bank_name = extract_path_info(file_path, base_input_path)
 
     if not person_name or not bank_name:
@@ -34,8 +36,11 @@ def process_file(file_path, base_input_path, output_dir):
         return
 
     try:
-        print(f"sensitive_data_masker: '{file_path}' [{bank_name}] processing...")
-        match = find_best_template(file_path, bank_name)
+        model_name = "DeepSeek (local)" if use_deepseek else "Gemini"
+        print(
+            f"sensitive_data_masker: '{file_path}' [{bank_name}] processing with {model_name}..."
+        )
+        match = find_best_template(file_path, bank_name, use_deepseek=use_deepseek)
 
         if not match:
             print(
