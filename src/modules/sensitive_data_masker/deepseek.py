@@ -37,7 +37,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%)."""
         response = requests.post(
             "http://localhost:11434/api/generate",
             json={
-                "model": "deepseek-r1:1.5b",
+                "model": "deepseek-r1:14b",
                 "prompt": prompt,
                 "images": [template_b64, input_b64],
                 "stream": False,

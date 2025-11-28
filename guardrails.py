@@ -142,20 +142,20 @@ def check_sensitive_data(file_path):
         }
 
 
-def process_files(input_dir, output_dir, use_deepseek=False):
+def process_files(input_dir, output_dir, use_ollama=False):
     """
     Process all files in input directory and validate masking
 
     Args:
         input_dir: Directory with masked files to validate
         output_dir: Directory to copy files that passed validation
-        use_deepseek: Use DeepSeek (local) instead of Gemini
+        use_ollama: Use DeepSeek (local) instead of Gemini
 
     Returns:
         dict: Statistics about the validation
     """
     check_function = (
-        check_sensitive_data_deepseek if use_deepseek else check_sensitive_data
+        check_sensitive_data_deepseek if use_ollama else check_sensitive_data
     )
 
     for root, _, files in os.walk(input_dir):
@@ -206,9 +206,9 @@ def main():
         help="Directory to copy files that passed validation",
     )
     parser.add_argument(
-        "--deepseek",
+        "--ollama",
         action="store_true",
-        help="Use local DeepSeek model via Ollama instead of Gemini (better privacy)",
+        help="use local model via Ollama instead of Gemini (better privacy)",
     )
 
     args = parser.parse_args()
@@ -220,14 +220,14 @@ def main():
         print(f"guardrails: ❌ Input directory does not exist: {input_dir}")
         return
 
-    if args.deepseek:
-        print("guardrails: Using DeepSeek (local) for validation 🔒")
+    if args.ollama:
+        print("guardrails: Using ollama (local) for validation 🔒")
     else:
         print("guardrails: Using Gemini for validation ☁️")
 
     os.makedirs(output_dir, exist_ok=True)
 
-    process_files(input_dir, output_dir, args.deepseek)
+    process_files(input_dir, output_dir, args.ollama)
     remove_empty_dirs(input_dir)
 
 

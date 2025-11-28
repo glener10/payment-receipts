@@ -13,12 +13,12 @@ async def main():
     real_path = os.path.realpath(args.input)
     output_dir = os.path.abspath(args.output)
 
-    if args.deepseek:
-        print("sensitive_data_masker: Using DeepSeek (local) for comparison 🔒")
+    if args.ollama:
+        print("sensitive_data_masker: Using ollama (local) for comparison 🔒")
     else:
         print("sensitive_data_masker: Using Gemini for comparison ☁️")
 
-    await process_files_with_coordinate_matching(real_path, output_dir, args.deepseek)
+    await process_files_with_coordinate_matching(real_path, output_dir, args.ollama)
 
 
 if __name__ == "__main__":

@@ -255,7 +255,7 @@ Ensure your input folder structure is as follows:
 To exec:
 
 ```
-$ python sensitive_data_masker.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --deepseek
+$ python sensitive_data_masker.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --ollama
 ```
 
 How it works:
@@ -300,7 +300,7 @@ Ensure your input folder contains masked files:
 To exec:
 
 ```
-$ python guardrails.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --deepseek
+$ python guardrails.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --ollama
 ```
 
 How it works:
