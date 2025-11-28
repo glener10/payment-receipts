@@ -6,11 +6,11 @@ import ollama
 from src.utils.pdf import pdf_to_image
 
 
-def compare_with_ollama(template_path, input_path, bank_name, template_name):
+def compare_with_ollama(template_path, input_path):
     temp_template_path = None
     temp_input_path = None
     try:
-        prompt = f"""
+        prompt = """
 <PERSONA>
 Você é um especialista em análise de documentos bancários.
 </PERSONA>
@@ -26,9 +26,6 @@ ATENÇÃO! IMPORTANTE!
 - Foque na localização de cada elemento, as keys de cada campo devem estar no mesmo local. Por exemplo se a key "nome" de uma imagem está no canto superior esquerdo, a outra imagem também deve ter a key "nome" no canto superior esquerdo.
 - Ambas imagens deve ter os mesmos elementos (keys) visíveis nas mesmas localizações/coordenadas, mesmo que os valores estejam diferentes ou mascarados.
 
-Banco esperado: {bank_name}
-Template: {template_name}
-
 Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
 {{
     "is_match": true/false,
@@ -42,9 +39,13 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
         file_ext = Path(template_path).suffix.lower()
         if file_ext == ".pdf":
             temp_template_path = pdf_to_image(template_path)
-            template_path = temp_template_path
             temp_input_path = pdf_to_image(input_path)
-            input_path = temp_input_path
+
+        image_paths = (
+            [temp_template_path, temp_input_path]
+            if temp_template_path and temp_input_path
+            else [template_path, input_path]
+        )
 
         response = ollama.chat(
             model="gemma3:12b",
@@ -52,7 +53,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
                 {
                     "role": "user",
                     "content": prompt,
-                    "images": [template_path, input_path],
+                    "images": image_paths,
                 }
             ],
         )

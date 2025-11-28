@@ -19,9 +19,9 @@ gemini_client = genai.GenerativeModel(
 )
 
 
-def compare_with_gemini(template_path, input_path, bank_name, template_name):
+def compare_with_gemini(template_path, input_path):
     try:
-        prompt = f"""Você é um especialista em análise de documentos bancários.
+        prompt = """Você é um especialista em análise de documentos bancários.
 
 Analise as duas imagens fornecidas e determine se elas têm o MESMO FORMATO/LAYOUT de comprovante bancário.
 
@@ -31,9 +31,6 @@ IMPORTANTE:
 - Verifique se são do mesmo banco/instituição financeira
 - Os VALORES dos dados podem ser diferentes - isso é NORMAL
 - Foque na similaridade do DESIGN e ESTRUTURA
-
-Banco esperado: {bank_name}
-Template: {template_name}
 
 Retorne um JSON com:
 {{

@@ -22,9 +22,7 @@ def find_best_template(input_path, bank_name, min_confidence=0.85, use_ollama=Fa
     compare_function = compare_with_ollama if use_ollama else compare_with_gemini
 
     for template in templates:
-        result = compare_function(
-            template["reference_path"], input_path, bank_name, template["name"]
-        )
+        result = compare_function(template["reference_path"], input_path)
 
         confidence = result.get("confidence", 0.0)
         is_match = result.get("is_match", False)
