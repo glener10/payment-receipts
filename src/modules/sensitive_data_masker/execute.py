@@ -11,7 +11,7 @@ from src.modules.sensitive_data_masker.masking import (
 
 
 async def process_files_with_coordinate_matching(
-    input_path: str, output_dir: str, use_deepseek: bool = False
+    input_path: str, output_dir: str, use_ollama: bool = False
 ):
     for root, _, files in os.walk(input_path):
         for file in files:
@@ -25,10 +25,10 @@ async def process_files_with_coordinate_matching(
                 continue
 
             file_path = os.path.join(root, file)
-            process_file(file_path, input_path, output_dir, use_deepseek)
+            process_file(file_path, input_path, output_dir, use_ollama)
 
 
-def process_file(file_path, base_input_path, output_dir, use_deepseek=False):
+def process_file(file_path, base_input_path, output_dir, use_ollama=False):
     person_name, bank_name = extract_path_info(file_path, base_input_path)
 
     if not person_name or not bank_name:
@@ -36,11 +36,11 @@ def process_file(file_path, base_input_path, output_dir, use_deepseek=False):
         return
 
     try:
-        model_name = "DeepSeek (local)" if use_deepseek else "Gemini"
+        model_name = "DeepSeek (local)" if use_ollama else "Gemini"
         print(
             f"sensitive_data_masker: '{file_path}' [{bank_name}] processing with {model_name}..."
         )
-        match = find_best_template(file_path, bank_name, use_deepseek=use_deepseek)
+        match = find_best_template(file_path, bank_name, use_ollama=use_ollama)
 
         if not match:
             print(

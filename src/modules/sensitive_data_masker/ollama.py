@@ -1,8 +1,14 @@
 import json
+import os
+from pathlib import Path
 import ollama
 
+from src.utils.pdf import pdf_to_image
 
-def compare_with_deepseek(template_path, input_path, bank_name, template_name):
+
+def compare_with_ollama(template_path, input_path, bank_name, template_name):
+    temp_template_path = None
+    temp_input_path = None
     try:
         prompt = f"""
 <PERSONA>
@@ -33,6 +39,12 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
 Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
 </MISSION>
 """
+        file_ext = Path(template_path).suffix.lower()
+        if file_ext == ".pdf":
+            temp_template_path = pdf_to_image(template_path)
+            template_path = temp_template_path
+            temp_input_path = pdf_to_image(input_path)
+            input_path = temp_input_path
 
         response = ollama.chat(
             model="gemma3:12b",
@@ -77,3 +89,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
         return result
     except Exception as e:
         return {"is_match": False, "confidence": 0.0, "reason": f"Error: {str(e)}"}
+    finally:
+        if temp_input_path and os.path.exists(temp_input_path):
+            os.remove(temp_input_path)
+            os.remove(temp_template_path)

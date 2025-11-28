@@ -3,14 +3,16 @@ import argparse
 import os
 import json
 import shutil
-import base64
-import requests
+
 from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
 from google.generativeai import types
+import ollama
+
 
 from src.utils.dirs import remove_empty_dirs
+from src.utils.pdf import pdf_to_image
 
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
@@ -43,70 +45,67 @@ Se TODOS os dados sensíveis estiverem cobertos por tarjas pretas, retorne has_s
 Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true."""
 
 
-def check_sensitive_data_deepseek(file_path):
+def check_sensitive_data_ollama(file_path):
     """
-    Check if file contains visible sensitive data using DeepSeek (Ollama)
+    Check if file contains visible sensitive data using Ollama
 
     Returns:
         dict: {'has_sensitive_data': bool, 'reason': str}
     """
+    temp_image = None
     try:
-        with open(file_path, "rb") as f:
-            file_b64 = base64.b64encode(f.read()).decode("utf-8")
+        file_ext = Path(file_path).suffix.lower()
+        if file_ext == ".pdf":
+            temp_image = pdf_to_image(file_path)
+            file_path = temp_image
 
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "deepseek-r1:7b",
-                "prompt": prompt,
-                "images": [file_b64],
-                "stream": False,
-                "format": "json",
-            },
-            timeout=120,
+        response = ollama.chat(
+            model="gemma3:12b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                    "images": [file_path],
+                }
+            ],
         )
 
-        if response.status_code != 200:
-            return {
-                "has_sensitive_data": True,
-                "reason": f"Ollama API error: {response.status_code}",
-            }
-
-        response_data = response.json()
-        response_text = response_data.get("response", "{}")
+        response_content = response["message"]["content"]
 
         try:
-            result = json.loads(response_text)
-
-            if not isinstance(result, dict):
-                raise ValueError("Response is not a dict")
-
-            if "has_sensitive_data" not in result:
-                result["has_sensitive_data"] = True
-            if "reason" not in result:
-                result["reason"] = "No reason provided"
-
-            return result
-
+            result = json.loads(response_content)
         except json.JSONDecodeError:
             import re
 
             json_match = re.search(
-                r"```json\s*(\{.*?\})\s*```", response_text, re.DOTALL
+                r"```json\s*(\{.*?\})\s*```", response_content, re.DOTALL
             )
             if json_match:
                 result = json.loads(json_match.group(1))
-                return result
+            else:
+                return {
+                    "has_sensitive_data": True,
+                    "reason": f"Failed to parse response: {response_content[:200]}",
+                }
 
-            return {
-                "has_sensitive_data": True,
-                "reason": f"Failed to parse response: {response_text[:200]}",
-            }
+        if not isinstance(result, dict):
+            raise ValueError("Response is not a dict")
+
+        if "has_sensitive_data" not in result:
+            result["has_sensitive_data"] = True
+        if "reason" not in result:
+            result["reason"] = "No reason provided"
+
+        return result
+
     except Exception as e:
         return {
             "has_sensitive_data": True,
             "reason": f"Error during check: {str(e)}",
         }
+    finally:
+        if temp_image and os.path.exists(temp_image):
+            os.remove(temp_image)
 
 
 def check_sensitive_data(file_path):
@@ -154,9 +153,7 @@ def process_files(input_dir, output_dir, use_ollama=False):
     Returns:
         dict: Statistics about the validation
     """
-    check_function = (
-        check_sensitive_data_deepseek if use_ollama else check_sensitive_data
-    )
+    check_function = check_sensitive_data_ollama if use_ollama else check_sensitive_data
 
     for root, _, files in os.walk(input_dir):
         for file in files:
