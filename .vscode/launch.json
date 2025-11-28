@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "sensitive_data_masker",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/sensitive_data_masker.py",
+            "console": "integratedTerminal",
+            "args": ["-i", "z_dont_masked", "-o", "output/", "--ollama"]
+        }
+    ]
+}

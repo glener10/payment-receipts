@@ -30,14 +30,14 @@
 
 You will need [install Ollama](https://ollama.com/):
 
-Models `deepseek-r1:1.5b` in `sensitive_data_masker.py` and `deepseek-r1:7b` in ``guardrails.py`
+Models `A` in `sensitive_data_masker.py` and `B` in ``guardrails.py`
 
 ```
 # sensitive_data_masker.py
-$ ollama run deepseek-r1:1.5b
+$ ollama run A
 
 #guardrails.py
-$ ollama run deepseek-r1:7b
+$ ollama run B
 ```
 
 This model yielded good results, but feel free to test others.
