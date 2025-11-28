@@ -27,7 +27,7 @@ gemini_client = genai.GenerativeModel(
 
 prompt = """Analise esta imagem de comprovante bancário e verifique se há DADOS SENSÍVEIS VISÍVEIS.
 
-Dados sensíveis incluem:
+Dados sensíveis incluem valores de:
 - Nome completo de pessoas
 - CPF
 - Chave Pix (CPF, email, telefone, chave aleatória)
@@ -46,12 +46,6 @@ Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true."""
 
 
 def check_sensitive_data_ollama(file_path):
-    """
-    Check if file contains visible sensitive data using Ollama
-
-    Returns:
-        dict: {'has_sensitive_data': bool, 'reason': str}
-    """
     temp_image = None
     try:
         file_ext = Path(file_path).suffix.lower()
@@ -60,7 +54,7 @@ def check_sensitive_data_ollama(file_path):
             file_path = temp_image
 
         response = ollama.chat(
-            model="gemma3:12b",
+            model="gemma3:4b",
             messages=[
                 {
                     "role": "user",
@@ -109,12 +103,6 @@ def check_sensitive_data_ollama(file_path):
 
 
 def check_sensitive_data(file_path):
-    """
-    Check if file contains visible sensitive data using Gemini
-
-    Returns:
-        dict: {'has_sensitive_data': bool, 'reason': str}
-    """
     try:
         with open(file_path, "rb") as f:
             file_data = f.read()
@@ -142,17 +130,6 @@ def check_sensitive_data(file_path):
 
 
 def process_files(input_dir, output_dir, use_ollama=False):
-    """
-    Process all files in input directory and validate masking
-
-    Args:
-        input_dir: Directory with masked files to validate
-        output_dir: Directory to copy files that passed validation
-        use_ollama: Use DeepSeek (local) instead of Gemini
-
-    Returns:
-        dict: Statistics about the validation
-    """
     check_function = check_sensitive_data_ollama if use_ollama else check_sensitive_data
 
     for root, _, files in os.walk(input_dir):
