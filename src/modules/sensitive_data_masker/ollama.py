@@ -48,7 +48,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
         )
 
         response = ollama.chat(
-            model="gemma3:12b",
+            model="qwen3-vl:8b",
             messages=[
                 {
                     "role": "user",
@@ -56,6 +56,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
                     "images": image_paths,
                 }
             ],
+            options={"temperature": 0},
         )
 
         response_content = response["message"]["content"]
@@ -89,7 +90,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
 
         return result
     except Exception as e:
-        return {"is_match": False, "confidence": 0.0, "reason": f"Error: {str(e)}"}
+        raise e
     finally:
         if temp_input_path and os.path.exists(temp_input_path):
             os.remove(temp_input_path)
