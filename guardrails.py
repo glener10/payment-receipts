@@ -25,9 +25,16 @@ gemini_client = genai.GenerativeModel(
     ),
 )
 
-prompt = """Analise esta imagem de comprovante bancário e verifique se há DADOS SENSÍVEIS VISÍVEIS.
+prompt = """
+<PERSONA>
+Você é um especialista em análise de documentos sensíveis em comprovantes bancários.
+</PERSONA>
+
+<MISSION>
+Analise a imagem enviada de comprovante bancário e verifique se há DADOS SENSÍVEIS VISÍVEIS.
 
 Dados sensíveis incluem valores de:
+
 - Nome completo de pessoas
 - CPF
 - Chave Pix (CPF, email, telefone, chave aleatória)
@@ -42,7 +49,8 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
 }
 
 Se TODOS os dados sensíveis estiverem cobertos por tarjas pretas, retorne has_sensitive_data=false.
-Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true."""
+Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true.
+</MISSION>"""
 
 
 def check_sensitive_data_ollama(file_path):
@@ -54,7 +62,7 @@ def check_sensitive_data_ollama(file_path):
             file_path = temp_image
 
         response = ollama.chat(
-            model="gemma3:4b",
+            model="qwen3-vl:8b",
             messages=[
                 {
                     "role": "user",
@@ -62,6 +70,7 @@ def check_sensitive_data_ollama(file_path):
                     "images": [file_path],
                 }
             ],
+            params={"temperature": 0.1},
         )
 
         response_content = response["message"]["content"]
@@ -147,19 +156,19 @@ def process_files(input_dir, output_dir, use_ollama=False):
 
             rel_path = os.path.relpath(file_path, input_dir)
 
-            print(f"guardrails: validating '{rel_path}' 🔍")
+            print(f"guardrails 🔍: validating '{rel_path}'")
             result = check_function(file_path)
 
             if result["has_sensitive_data"]:
                 print(
-                    f"guardrails: '{rel_path}' sensitive data found - {result['reason']} ⚠️"
+                    f"guardrails ⚠️: '{rel_path}' sensitive data found - {result['reason']}"
                 )
             else:
                 output_file_path = os.path.join(output_dir, rel_path)
                 os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
                 shutil.move(file_path, output_file_path)
                 print(
-                    f"guardrails: '{rel_path}' all data masked - {result['reason']} ✅"
+                    f"guardrails ✅: '{rel_path}' all data masked - {result['reason']}"
                 )
 
 
@@ -191,13 +200,13 @@ def main():
     output_dir = os.path.abspath(args.output)
 
     if not os.path.exists(input_dir):
-        print(f"guardrails: ❌ Input directory does not exist: {input_dir}")
+        print(f"guardrails ❌:  Input directory does not exist: {input_dir}")
         return
 
     if args.ollama:
-        print("guardrails: Using ollama (local) for validation 🔒")
+        print("guardrails 🔒: Using ollama (local) for validation")
     else:
-        print("guardrails: Using Gemini for validation ☁️")
+        print("guardrails ☁️: Using Gemini for validation")
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -207,10 +216,10 @@ def main():
 
 if __name__ == "__main__":
     start_time = datetime.datetime.now()
-    print(f"guardrails: 🚀 Starting guardrails validation at {start_time}")
+    print(f"guardrails 🚀: Starting guardrails validation at {start_time}")
 
     main()
 
     end_time = datetime.datetime.now()
     total_time = end_time - start_time
-    print(f"guardrails: ✅  Execution finished. Total time: {total_time}")
+    print(f"guardrails ✅: Execution finished. Total time: {total_time}")
