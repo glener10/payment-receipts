@@ -14,8 +14,16 @@ Nunca dava match mesmo tendo coordenada
 
 ![](qwen3-v1-8b.png)
 
-# deepseek-41:14b
+# deepseek-r1:14b
 
 Não achava match
 
 ![](r1-14b.png)
+
+# gemma3:12b
+
+Match errado
+
+# gemma3:4b
+
+match errado
