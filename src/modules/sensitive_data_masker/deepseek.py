@@ -86,18 +86,5 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%)."""
                 "confidence": 0.0,
                 "reason": f"Failed to parse response: {response_text[:200]}",
             }
-
-    except requests.exceptions.ConnectionError:
-        return {
-            "is_match": False,
-            "confidence": 0.0,
-            "reason": "Cannot connect to Ollama. Is it running? (ollama serve)",
-        }
-    except requests.exceptions.Timeout:
-        return {
-            "is_match": False,
-            "confidence": 0.0,
-            "reason": "Ollama request timeout (>120s)",
-        }
     except Exception as e:
         return {"is_match": False, "confidence": 0.0, "reason": f"Error: {str(e)}"}
