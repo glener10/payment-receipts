@@ -32,19 +32,16 @@ def process_file(file_path, base_input_path, output_dir, use_ollama=False):
     person_name, bank_name = extract_path_info(file_path, base_input_path)
 
     if not person_name or not bank_name:
-        print(f"sensitive_data_masker: invalid path structure: '{file_path}' ⚠️")
+        print(f"sensitive_data_masker ⚠️: invalid path structure: '{file_path}'")
         return
 
     try:
-        model_name = "Ollama (local)" if use_ollama else "Gemini"
-        print(
-            f"sensitive_data_masker: '{file_path}' [{bank_name}] processing with {model_name}..."
-        )
+        print(f"sensitive_data_masker [{bank_name}] '{file_path}' processing...")
         match = find_best_template(file_path, bank_name, use_ollama=use_ollama)
 
         if not match:
             print(
-                f"sensitive_data_masker: '{file_path}' [{bank_name}] no match found ⚠️"
+                f"sensitive_data_masker ⚠️: [{bank_name}] '{file_path}'  no match found"
             )
             return
 
@@ -75,7 +72,7 @@ def process_file(file_path, base_input_path, output_dir, use_ollama=False):
 
         if input_image is None:
             print(
-                f"sensitive_data_masker: '{file_path}' [{bank_name}] could not load file ⚠️"
+                f"sensitive_data_masker ⚠️: [{bank_name}] '{file_path}'  could not load file"
             )
             return
 
@@ -107,17 +104,17 @@ def process_file(file_path, base_input_path, output_dir, use_ollama=False):
 
         if success:
             print(
-                f"sensitive_data_masker: '{file_path}' [{bank_name}] masked with template [{template['bank_name']}/{template['name']}.{template['file_extension']}], confidence: {match['confidence']:.2f}, reason: {match['reason']} ✅"
+                f"sensitive_data_masker ✅: [{bank_name}] '{file_path}'  masked with template {template['name']}.{template['file_extension']}, confidence: {match['confidence']:.2f}, reason: {match['reason']}"
             )
             return
         else:
             print(
-                f"sensitive_data_masker: '{file_path}' [{bank_name}] masked failed ❌"
+                f"sensitive_data_masker ❌: [{bank_name}] '{file_path}' masked failed"
             )
             return
 
     except Exception as e:
-        print(f"sensitive_data_masker: error processing '{file_path}': {e}")
+        print(f"sensitive_data_masker ❌: error processing '{file_path}': {e}")
         return
 
 

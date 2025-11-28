@@ -14,19 +14,19 @@ async def main():
     output_dir = os.path.abspath(args.output)
 
     if args.ollama:
-        print("sensitive_data_masker: Using ollama (local) for comparison 🔒")
+        print("sensitive_data_masker 🔒: ssing ollama (local) for comparison")
     else:
-        print("sensitive_data_masker: Using Gemini for comparison ☁️")
+        print("sensitive_data_masker ☁️: ssing Gemini for comparison")
 
     await process_files_with_coordinate_matching(real_path, output_dir, args.ollama)
 
 
 if __name__ == "__main__":
     start_time = datetime.datetime.now()
-    print(f"sensitive_data_masker: 🚀 starting process at {start_time}")
+    print(f"sensitive_data_masker 🚀: starting process at {start_time}")
 
     asyncio.run(main())
 
     end_time = datetime.datetime.now()
     total_time = end_time - start_time
-    print(f"sensitive_data_masker: ✅ execution finished. Total time: {total_time}")
+    print(f"sensitive_data_masker ✅: execution finished. Total time: {total_time}")

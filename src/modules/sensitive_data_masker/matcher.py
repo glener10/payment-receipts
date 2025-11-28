@@ -49,7 +49,7 @@ def load_bank_templates(
 
     if not os.path.exists(bank_dir):
         raise FileNotFoundError(
-            f"sensitive_data_masker: bank directory not found: {bank_dir} ⚠️"
+            f"sensitive_data_masker ⚠️: bank directory not found: {bank_dir}"
         )
 
     is_pdf = file_extension.lower() == PDF_EXTENSION
@@ -93,6 +93,6 @@ def load_bank_templates(
                 }
             )
         except Exception as e:
-            print(f"sensitive_data_masker: ❌ error loading template {json_file}: {e}")
+            print(f"sensitive_data_masker ❌: error loading template {json_file}: {e}")
             continue
     return templates

@@ -22,7 +22,7 @@ def apply_mask_to_image(image_path, coordinates, output_path):
         return True
 
     except Exception as e:
-        print(f"❌ Error masking image {image_path}: {e}")
+        print(f"❌ error masking image {image_path}: {e}")
         return False
 
 
@@ -52,5 +52,5 @@ def apply_mask_to_pdf(pdf_path, coordinates, output_path):
 
         return True
     except Exception as e:
-        print(f"❌ Error masking PDF {pdf_path}: {e}")
+        print(f"❌ error masking PDF {pdf_path}: {e}")
         return False
