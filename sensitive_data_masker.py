@@ -14,9 +14,9 @@ async def main():
     output_dir = os.path.abspath(args.output)
 
     if args.ollama:
-        print("sensitive_data_masker 🔒: ssing ollama (local) for comparison")
+        print("sensitive_data_masker 🔒: using ollama (local) for comparison")
     else:
-        print("sensitive_data_masker ☁️: ssing Gemini for comparison")
+        print("sensitive_data_masker ☁️: using Gemini for comparison")
 
     await process_files_with_coordinate_matching(real_path, output_dir, args.ollama)
 
