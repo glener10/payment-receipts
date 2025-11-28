@@ -28,15 +28,21 @@
 
 ## 💻 **Dependencies and Environment**
 
-**Gemini (Optional)**: This project can use the paid Google Gemini API for image comparison. However, **be cautious about sharing sensitive data from receipts**. If you choose to use Gemini, [configure a valid Gemini API Key](https://aistudio.google.com/apikey) and ensure you have a `.env` file with the environment variable **GEMINI_API_KEY**.
+You will need [install Ollama](https://ollama.com/):
 
-**Ollama (Recommended)**: Alternatively, install [Ollama](https://ollama.com/) and run:
+Models `deepseek-r1:1.5b` in `sensitive_data_masker.py` and `deepseek-r1:7b` in ``guardrails.py`
 
 ```
+# sensitive_data_masker.py
 $ ollama run deepseek-r1:1.5b
+
+#guardrails.py
+$ ollama run deepseek-r1:7b
 ```
 
 This model yielded good results, but feel free to test others.
+
+**Gemini (Optional)**: Instead deepseek models, you can use the paid Google Gemini API for image comparison. However, **be cautious about sharing sensitive data from receipts**. If you choose to use Gemini, [configure a valid Gemini API Key](https://aistudio.google.com/apikey) and ensure you have a `.env` file with the environment variable **GEMINI_API_KEY**.
 
 To setup environment use (you will need [venv](https://docs.python.org/pt-br/3.13/library/venv.html)):
 
@@ -249,7 +255,7 @@ Ensure your input folder structure is as follows:
 To exec:
 
 ```
-$ python sensitive_data_masker.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
+$ python sensitive_data_masker.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --deepseek
 ```
 
 How it works:
@@ -294,7 +300,7 @@ Ensure your input folder contains masked files:
 To exec:
 
 ```
-$ python guardrails.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
+$ python guardrails.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --deepseek
 ```
 
 How it works:
