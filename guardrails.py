@@ -3,6 +3,8 @@ import argparse
 import os
 import json
 import shutil
+import base64
+import requests
 from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
@@ -21,16 +23,7 @@ gemini_client = genai.GenerativeModel(
     ),
 )
 
-
-def check_sensitive_data(file_path):
-    """
-    Check if file contains visible sensitive data using Gemini
-
-    Returns:
-        dict: {'has_sensitive_data': bool, 'reason': str}
-    """
-    try:
-        prompt = """Analise esta imagem de comprovante bancário e verifique se há DADOS SENSÍVEIS VISÍVEIS.
+prompt = """Analise esta imagem de comprovante bancário e verifique se há DADOS SENSÍVEIS VISÍVEIS.
 
 Dados sensíveis incluem:
 - Nome completo de pessoas
@@ -40,7 +33,7 @@ Dados sensíveis incluem:
 - Agência
 - Identificador da transação
 
-Retorne um JSON com:
+Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
 {
     "has_sensitive_data": true/false,
     "reason": "explicação do que foi encontrado ou confirmação de que tudo está mascarado"
@@ -49,6 +42,81 @@ Retorne um JSON com:
 Se TODOS os dados sensíveis estiverem cobertos por tarjas pretas, retorne has_sensitive_data=false.
 Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true."""
 
+
+def check_sensitive_data_deepseek(file_path):
+    """
+    Check if file contains visible sensitive data using DeepSeek (Ollama)
+
+    Returns:
+        dict: {'has_sensitive_data': bool, 'reason': str}
+    """
+    try:
+        with open(file_path, "rb") as f:
+            file_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "deepseek-r1:7b",
+                "prompt": prompt,
+                "images": [file_b64],
+                "stream": False,
+                "format": "json",
+            },
+            timeout=120,
+        )
+
+        if response.status_code != 200:
+            return {
+                "has_sensitive_data": True,
+                "reason": f"Ollama API error: {response.status_code}",
+            }
+
+        response_data = response.json()
+        response_text = response_data.get("response", "{}")
+
+        try:
+            result = json.loads(response_text)
+
+            if not isinstance(result, dict):
+                raise ValueError("Response is not a dict")
+
+            if "has_sensitive_data" not in result:
+                result["has_sensitive_data"] = True
+            if "reason" not in result:
+                result["reason"] = "No reason provided"
+
+            return result
+
+        except json.JSONDecodeError:
+            import re
+
+            json_match = re.search(
+                r"```json\s*(\{.*?\})\s*```", response_text, re.DOTALL
+            )
+            if json_match:
+                result = json.loads(json_match.group(1))
+                return result
+
+            return {
+                "has_sensitive_data": True,
+                "reason": f"Failed to parse response: {response_text[:200]}",
+            }
+    except Exception as e:
+        return {
+            "has_sensitive_data": True,
+            "reason": f"Error during check: {str(e)}",
+        }
+
+
+def check_sensitive_data(file_path):
+    """
+    Check if file contains visible sensitive data using Gemini
+
+    Returns:
+        dict: {'has_sensitive_data': bool, 'reason': str}
+    """
+    try:
         with open(file_path, "rb") as f:
             file_data = f.read()
 
@@ -74,17 +142,22 @@ Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true."""
         }
 
 
-def process_files(input_dir, output_dir):
+def process_files(input_dir, output_dir, use_deepseek=False):
     """
     Process all files in input directory and validate masking
 
     Args:
         input_dir: Directory with masked files to validate
         output_dir: Directory to copy files that passed validation
+        use_deepseek: Use DeepSeek (local) instead of Gemini
 
     Returns:
         dict: Statistics about the validation
     """
+    check_function = (
+        check_sensitive_data_deepseek if use_deepseek else check_sensitive_data
+    )
+
     for root, _, files in os.walk(input_dir):
         for file in files:
             _, ext = os.path.splitext(file)
@@ -101,7 +174,7 @@ def process_files(input_dir, output_dir):
             rel_path = os.path.relpath(file_path, input_dir)
 
             print(f"guardrails: validating '{rel_path}' 🔍")
-            result = check_sensitive_data(file_path)
+            result = check_function(file_path)
 
             if result["has_sensitive_data"]:
                 print(
@@ -132,6 +205,11 @@ def main():
         required=True,
         help="Directory to copy files that passed validation",
     )
+    parser.add_argument(
+        "--deepseek",
+        action="store_true",
+        help="Use local DeepSeek model via Ollama instead of Gemini (better privacy)",
+    )
 
     args = parser.parse_args()
 
@@ -142,9 +220,14 @@ def main():
         print(f"guardrails: ❌ Input directory does not exist: {input_dir}")
         return
 
+    if args.deepseek:
+        print("guardrails: Using DeepSeek (local) for validation 🔒")
+    else:
+        print("guardrails: Using Gemini for validation ☁️")
+
     os.makedirs(output_dir, exist_ok=True)
 
-    process_files(input_dir, output_dir)
+    process_files(input_dir, output_dir, args.deepseek)
     remove_empty_dirs(input_dir)
 
 
