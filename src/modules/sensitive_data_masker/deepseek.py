@@ -1,20 +1,24 @@
 import json
-import base64
-import requests
+import ollama
 
 
 def compare_with_deepseek(template_path, input_path, bank_name, template_name):
     try:
-        prompt = f"""Você é um especialista em análise de documentos bancários.
+        prompt = f"""
+<PERSONA>
+Você é um especialista em análise de documentos bancários.
+</PERSONA>
 
+<MISSION>
 Analise as duas imagens fornecidas e determine se elas têm o MESMO FORMATO/LAYOUT de comprovante bancário.
 
-IMPORTANTE:
-- A primeira imagem (referência) pode ter dados mascarados com tarjas pretas - IGNORE essas tarjas
-- Compare apenas a ESTRUTURA, LAYOUT e FORMATO do documento
+ATENÇÃO! IMPORTANTE!
+
 - Verifique se são do mesmo banco/instituição financeira
-- Os VALORES dos dados podem ser diferentes - isso é NORMAL
-- Foque na similaridade do DESIGN e ESTRUTURA
+- A primeira imagem (referência) pode ter dados mascarados com tarjas pretas - IGNORE essas tarjas, foque na disposição dos elementos
+- Compare apenas a ESTRUTURA, LAYOUT e FORMATO do documento, Os VALORES dos dados podem ser diferentes - isso é NORMAL.
+- Foque na localização de cada elemento, as keys de cada campo devem estar no mesmo local. Por exemplo se a key "nome" de uma imagem está no canto superior esquerdo, a outra imagem também deve ter a key "nome" no canto superior esquerdo.
+- Ambas imagens deve ter os mesmos elementos (keys) visíveis nas mesmas localizações/coordenadas, mesmo que os valores estejam diferentes ou mascarados.
 
 Banco esperado: {bank_name}
 Template: {template_name}
@@ -26,65 +30,50 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
     "reason": "explicação detalhada"
 }}
 
-Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%)."""
+Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
+</MISSION>
+"""
 
-        with open(template_path, "rb") as f:
-            template_b64 = base64.b64encode(f.read()).decode("utf-8")
-
-        with open(input_path, "rb") as f:
-            input_b64 = base64.b64encode(f.read()).decode("utf-8")
-
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={
-                "model": "deepseek-r1:14b",
-                "prompt": prompt,
-                "images": [template_b64, input_b64],
-                "stream": False,
-                "format": "json",
-            },
-            timeout=120,
+        response = ollama.chat(
+            model="gemma3:12b",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                    "images": [template_path, input_path],
+                }
+            ],
         )
 
-        if response.status_code != 200:
-            return {
-                "is_match": False,
-                "confidence": 0.0,
-                "reason": f"Ollama API error: {response.status_code}",
-            }
-
-        response_data = response.json()
-        response_text = response_data.get("response", "{}")
+        response_content = response["message"]["content"]
 
         try:
-            result = json.loads(response_text)
-
-            if not isinstance(result, dict):
-                raise ValueError("Response is not a dict")
-
-            if "is_match" not in result:
-                result["is_match"] = False
-            if "confidence" not in result:
-                result["confidence"] = 0.0
-            if "reason" not in result:
-                result["reason"] = "No reason provided"
-
-            return result
-
+            result = json.loads(response_content)
         except json.JSONDecodeError:
             import re
 
             json_match = re.search(
-                r"```json\s*(\{.*?\})\s*```", response_text, re.DOTALL
+                r"```json\s*(\{.*?\})\s*```", response_content, re.DOTALL
             )
             if json_match:
                 result = json.loads(json_match.group(1))
-                return result
+            else:
+                return {
+                    "is_match": False,
+                    "confidence": 0.0,
+                    "reason": f"Failed to parse response: {response_content[:200]}",
+                }
 
-            return {
-                "is_match": False,
-                "confidence": 0.0,
-                "reason": f"Failed to parse response: {response_text[:200]}",
-            }
+        if not isinstance(result, dict):
+            raise ValueError("Response is not a dict")
+
+        if "is_match" not in result:
+            result["is_match"] = False
+        if "confidence" not in result:
+            result["confidence"] = 0.0
+        if "reason" not in result:
+            result["reason"] = "No reason provided"
+
+        return result
     except Exception as e:
         return {"is_match": False, "confidence": 0.0, "reason": f"Error: {str(e)}"}
