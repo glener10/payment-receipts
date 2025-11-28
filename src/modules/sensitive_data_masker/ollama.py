@@ -56,7 +56,7 @@ Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
                     "images": image_paths,
                 }
             ],
-            options={"temperature": 0},
+            options={"temperature": 0.1},
         )
 
         response_content = response["message"]["content"]

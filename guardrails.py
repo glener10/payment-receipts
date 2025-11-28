@@ -70,7 +70,7 @@ def check_sensitive_data_ollama(file_path):
                     "images": [file_path],
                 }
             ],
-            params={"temperature": 0.1},
+            options={"temperature": 0.1},
         )
 
         response_content = response["message"]["content"]
