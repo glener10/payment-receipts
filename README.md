@@ -30,14 +30,14 @@
 
 You will need [install Ollama](https://ollama.com/):
 
-Models `A` in `sensitive_data_masker.py` and `B` in ``guardrails.py`
+Models `minicpm-v` in `sensitive_data_masker.py` and `minicpm-v` in ``guardrails.py`
 
 ```
 # sensitive_data_masker.py
-$ ollama run A
+$ ollama run minicpm-v
 
 #guardrails.py
-$ ollama run B
+$ ollama run minicpm-v
 ```
 
 This model yielded good results, but feel free to test others.
