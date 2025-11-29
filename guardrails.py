@@ -27,30 +27,38 @@ gemini_client = genai.GenerativeModel(
 
 prompt = """
 <PERSONA>
-Você é um especialista em análise de documentos sensíveis em comprovantes bancários.
+Você é um Auditor de Privacidade (DLP - Data Loss Prevention) especializado em verificar redação/anonimização em documentos.
 </PERSONA>
 
-<MISSION>
-Analise a imagem enviada de comprovante bancário e verifique se há DADOS SENSÍVEIS VISÍVEIS.
+<DEFINICOES>
+DADO SENSÍVEL: Qualquer VALOR específico que identifique uma pessoa ou conta.
+RÓTULO: O nome do campo (ex: as palavras "CPF", "Agência", "Nome", "Valor"). Rótulos NÃO são sensíveis.
+ANONIMIZADO: Quando o valor está coberto por uma tarja preta sólida, tornando impossível a leitura.
+</DEFINICOES>
 
-Dados sensíveis incluem valores de:
+<MISSAO>
+Examine a imagem e verifique se algum VALOR SENSÍVEL "escapou" da anonimização.
+Você deve ignorar os RÓTULOS. Foque apenas no conteúdo/valor ao lado ou abaixo do rótulo.
 
-- Nome completo de pessoas
-- CPF
-- Chave Pix (CPF, email, telefone, chave aleatória)
-- Número de conta bancária
-- Agência
-- Identificador da transação
+Verifique especificamente os VALORES de:
+1. Nomes de pessoas (Beneficiário ou Pagador).
+2. Números de CPF ou CNPJ.
+3. Chaves Pix.
+4. Números de Agência e Conta.
 
-Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
+<REGRAS DE DECISÃO>
+- Se você consegue ler qualquer parte de um número de CPF, Conta ou Nome -> has_sensitive_data = true.
+- Se você vê apenas tarjas pretas onde deveriam estar os dados -> has_sensitive_data = false.
+- Se você vê a palavra "CPF" mas o número ao lado está coberto -> has_sensitive_data = false.
+- Vazamento Parcial: Se uma tarja cobre apenas metade de um nome ou número, considere como DADO SENSÍVEL VISÍVEL.
+
+Responda estritamente neste formato JSON:
 {
-    "has_sensitive_data": true/false,
-    "reason": "explicação do que foi encontrado ou confirmação de que tudo está mascarado"
+    "analysis": "Descreva brevemente o que você vê nos campos de Nome, CPF e Conta (se estão legíveis ou tarjados)",
+    "has_sensitive_data": true/false
 }
-
-Se TODOS os dados sensíveis estiverem cobertos por tarjas pretas, retorne has_sensitive_data=false.
-Se QUALQUER dado sensível estiver visível, retorne has_sensitive_data=true.
-</MISSION>"""
+</MISSAO>
+"""
 
 
 def check_sensitive_data_ollama(file_path):
@@ -62,7 +70,7 @@ def check_sensitive_data_ollama(file_path):
             file_path = temp_image
 
         response = ollama.chat(
-            model="qwen3-vl:8b",
+            model="minicpm-v",
             messages=[
                 {
                     "role": "user",
@@ -70,7 +78,8 @@ def check_sensitive_data_ollama(file_path):
                     "images": [file_path],
                 }
             ],
-            options={"temperature": 0.1},
+            options={"temperature": 0.0, "num_ctx": 4096},
+            format="json",
         )
 
         response_content = response["message"]["content"]
@@ -86,26 +95,12 @@ def check_sensitive_data_ollama(file_path):
             if json_match:
                 result = json.loads(json_match.group(1))
             else:
-                return {
-                    "has_sensitive_data": True,
-                    "reason": f"Failed to parse response: {response_content[:200]}",
-                }
-
-        if not isinstance(result, dict):
-            raise ValueError("Response is not a dict")
-
-        if "has_sensitive_data" not in result:
-            result["has_sensitive_data"] = True
-        if "reason" not in result:
-            result["reason"] = "No reason provided"
+                raise ValueError("No valid JSON found in response")
 
         return result
 
     except Exception as e:
-        return {
-            "has_sensitive_data": True,
-            "reason": f"Error during check: {str(e)}",
-        }
+        raise e
     finally:
         if temp_image and os.path.exists(temp_image):
             os.remove(temp_image)
@@ -132,10 +127,7 @@ def check_sensitive_data(file_path):
         return result
 
     except Exception as e:
-        return {
-            "has_sensitive_data": True,
-            "reason": f"Error during check: {str(e)}",
-        }
+        raise e
 
 
 def process_files(input_dir, output_dir, use_ollama=False):
@@ -161,14 +153,14 @@ def process_files(input_dir, output_dir, use_ollama=False):
 
             if result["has_sensitive_data"]:
                 print(
-                    f"guardrails ⚠️: '{rel_path}' sensitive data found - {result['reason']}"
+                    f"guardrails ⚠️: '{rel_path}' sensitive data found - {result['analysis']}"
                 )
             else:
                 output_file_path = os.path.join(output_dir, rel_path)
                 os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
                 shutil.move(file_path, output_file_path)
                 print(
-                    f"guardrails ✅: '{rel_path}' all data masked - {result['reason']}"
+                    f"guardrails ✅: '{rel_path}' all data masked - {result['analysis']}"
                 )
 
 
