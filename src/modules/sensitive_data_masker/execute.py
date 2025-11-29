@@ -104,7 +104,7 @@ def process_file(file_path, base_input_path, output_dir, use_ollama=False):
 
         if success:
             print(
-                f"sensitive_data_masker ✅: [{bank_name}] '{file_path}'  masked with template {template['name']}.{template['file_extension']}, confidence: {match['confidence']:.2f}, reason: {match['reason']}"
+                f"sensitive_data_masker ✅: [{bank_name}] '{file_path}'  masked with template {template['name']}{template['file_extension']}, confidence: {match['confidence']:.2f}, reason: {match['reason']}"
             )
             return
         else:
