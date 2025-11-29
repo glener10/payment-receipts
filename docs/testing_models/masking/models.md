@@ -14,6 +14,8 @@ match errado
 
 # minicpm-v
 
+Alterado temperatura do default (Qual?) para 0.0
+
 Trocando prompt de:
 
 ```
