@@ -9,14 +9,14 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 PDF_EXTENSION = ".pdf"
 
 
-def find_best_template(input_path, bank_name, min_confidence=0.85, use_ollama=False):
+def find_best_template(input_path, bank_name, use_ollama=False):
     _, file_ext = os.path.splitext(input_path)
     templates = load_bank_templates(bank_name, file_ext)
 
     if not templates:
         return None
 
-    best_match = None
+    response = None
     best_confidence = 0.0
 
     compare_function = compare_with_ollama if use_ollama else compare_with_gemini
@@ -27,16 +27,17 @@ def find_best_template(input_path, bank_name, min_confidence=0.85, use_ollama=Fa
         confidence = result.get("confidence", 0.0)
         is_match = result.get("is_match", False)
 
-        if is_match and confidence > best_confidence:
+        if not response or (confidence > best_confidence):
             best_confidence = confidence
-            best_match = {
+            response = {
                 "template": template,
                 "confidence": confidence,
                 "reason": result.get("reason", ""),
+                "is_match": is_match,
             }
 
-    if best_match and best_confidence >= min_confidence:
-        return best_match
+    if response:
+        return response
 
     return None
 

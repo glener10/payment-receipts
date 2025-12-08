@@ -39,9 +39,10 @@ def process_file(file_path, base_input_path, output_dir, use_ollama=False):
         print(f"sensitive_data_masker [{bank_name}] '{file_path}' processing...")
         match = find_best_template(file_path, bank_name, use_ollama=use_ollama)
 
-        if not match:
+        if not match or match["is_match"] is False or match["confidence"] < 0.85:
+            reason_no_match = match["reason"]
             print(
-                f"sensitive_data_masker ⚠️: [{bank_name}] '{file_path}'  no match found"
+                f"sensitive_data_masker ⚠️: [{bank_name}] '{file_path}' {reason_no_match}"
             )
             return
 
