@@ -14,7 +14,14 @@ genai.configure(api_key=gemini_api_key)
 gemini_client = genai.GenerativeModel(
     model_name="gemini-2.5-flash",
     generation_config=types.GenerationConfig(
+        temperature=0.0,
+        top_p=1.0,
+        top_k=1,
+        presence_penalty=0.0,
+        frequency_penalty=0.0,
+        max_output_tokens=2048,
         response_mime_type="application/json",
+        candidate_count=1,
     ),
 )
 
