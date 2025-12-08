@@ -1,5 +1,5 @@
--   qwen3-v1:8b
+-   qwen3-vl:8b
 -   gemma3:12b
 -   gemma3:4b
 -   minicpm-v
--   qwen2.5v1:7n (**to testing...**)
+-   **qwen2.5vl:7b**
