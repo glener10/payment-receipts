@@ -136,10 +136,28 @@ def check_sensitive_data_ollama(file_path):
             else:
                 raise ValueError("No valid JSON found in response")
 
+        if not isinstance(result, dict):
+            return {
+                "has_sensitive_data": True,
+                "analysis": "Invalid response format from Ollama",
+                "leaked_fields": [],
+            }
+
+        if "has_sensitive_data" not in result:
+            result["has_sensitive_data"] = True
+        if "analysis" not in result:
+            result["analysis"] = "No analysis provided"
+        if "leaked_fields" not in result:
+            result["leaked_fields"] = []
+
         return result
 
     except Exception as e:
-        raise e
+        return {
+            "has_sensitive_data": True,
+            "analysis": f"Error during check: {str(e)}",
+            "leaked_fields": [],
+        }
     finally:
         if temp_image and os.path.exists(temp_image):
             os.remove(temp_image)
@@ -162,11 +180,46 @@ def check_sensitive_data(file_path):
         contents = [prompt, {"mime_type": mime_type, "data": file_data}]
 
         response = gemini_client.generate_content(contents=contents)
-        result = json.loads(response.text)
+
+        try:
+            result = json.loads(response.text)
+        except json.JSONDecodeError:
+            import re
+
+            json_match = re.search(
+                r"```json\s*(\{.*?\})\s*```", response.text, re.DOTALL
+            )
+            if json_match:
+                result = json.loads(json_match.group(1))
+            else:
+                return {
+                    "has_sensitive_data": True,
+                    "analysis": f"Failed to parse Gemini response: {response.text[:200]}",
+                    "leaked_fields": [],
+                }
+
+        if not isinstance(result, dict):
+            return {
+                "has_sensitive_data": True,
+                "analysis": "Invalid response format from Gemini",
+                "leaked_fields": [],
+            }
+
+        if "has_sensitive_data" not in result:
+            result["has_sensitive_data"] = True
+        if "analysis" not in result:
+            result["analysis"] = "No analysis provided"
+        if "leaked_fields" not in result:
+            result["leaked_fields"] = []
+
         return result
 
     except Exception as e:
-        raise e
+        return {
+            "has_sensitive_data": True,
+            "analysis": f"Error during check: {str(e)}",
+            "leaked_fields": [],
+        }
 
 
 def process_files(input_dir, output_dir, use_ollama=False):
@@ -190,10 +243,9 @@ def process_files(input_dir, output_dir, use_ollama=False):
             print(f"guardrails 🔍: validating '{rel_path}'")
             result = check_function(file_path)
 
-            if result["has_sensitive_data"]:
-                print(
-                    f"guardrails ⚠️: '{rel_path}' sensitive data found - {result['analysis']}"
-                )
+            if result.get("has_sensitive_data", True):
+                analysis = result.get("analysis", "No details provided")
+                print(f"guardrails ⚠️: '{rel_path}' sensitive data found - {analysis}")
             else:
                 output_file_path = os.path.join(output_dir, rel_path)
                 os.makedirs(os.path.dirname(output_file_path), exist_ok=True)
