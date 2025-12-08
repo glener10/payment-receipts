@@ -34,14 +34,14 @@ The workflow for receiving a new payment receipt is described in the image below
 
 You will need [install Ollama](https://ollama.com/):
 
-Models `minicpm-v` in `sensitive_data_masker.py` and `minicpm-v` in ``guardrails.py`
+Models `qwen2.5vl:7b` in `sensitive_data_masker.py` and `qwen2.5vl:7b` in ``guardrails.py`
 
 ```
 # sensitive_data_masker.py
-$ ollama run minicpm-v
+$ ollama run qwen2.5vl:7b
 
 #guardrails.py
-$ ollama run minicpm-v
+$ ollama run qwen2.5vl:7b
 ```
 
 This model yielded good results, but feel free to test others.
