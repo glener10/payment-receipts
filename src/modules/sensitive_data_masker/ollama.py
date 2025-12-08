@@ -15,51 +15,48 @@ def compare_with_ollama(template_path, input_path):
 Você é um auditor rigoroso de layouts bancários.
 </PERSONA>
 
+<INPUT_FORMAT>
+Você receberá EXATAMENTE 2 imagens:
+- Documento A = primeira imagem
+- Documento B = segunda imagem
+Sempre mantenha essa ordem.
+</INPUT_FORMAT>
+
 <MISSION>
-Seu objetivo é comparar a ESTRUTURA visual de dois comprovantes.
-
-<DEFINICOES>
-CHAVES: A "chave" ou "etiqueta" que identifica o tipo de dado (ex: "Nome do Beneficiário", "CPF", "Agência", etc). Ignore os VALORES, foque apenas nos CHAVES.
-VALOR: Qualquer VALOR específico de uma Chave, você deve ignorar os valores ou tarjas pretas (usadas para anonimizar dados sensíveis) e focar apenas nas CHAVES.
-</DEFINICOES>
-
-<REGRAS_MUITO_IMPORTANTES>
-
-- Tarjas pretas na imagem são censuras VÁLIDAS. Foque nas CHAVES e não nos VALORES.
-
-- Se as CHAVES não forem IDÊNTICAS, não é o mesmo layout.
-
-- Ignore os VALORES dos campos. Foque apenas nas CHAVES dos campos e suas posições. Os VALORES são diferentes entre comprovantes, mas as CHAVES permanecem as mesmas, geralmente existem uma separação visual clara entre CHAVE e VALOR, podendo ser uma quebra de linha, um espaçamento, ou um caractere especial como ":".
-
-</REGRAS_MUITO_IMPORTANTES>
-
-Siga estes passos estritamente:
-
-1. Ambos layouts possuem as MESMAS CHAVES? Um layout não pode ter mais ou menos CHAVES que o outro.
-2. Ambos layouts possuem as MESMAS CHAVES nos mesmos locais?
-3. Ambos layouts possuem as MESMAS CHAVES na exata ordem?
-4. Ambos layouts possuem presença de logotipos ou marcas d'água? Os logotipos tem o mesmo tamanho e estão na mesma posição?
-5. Ambos layouts possuem os MESMOS elementos gráficos (linhas, caixas, bordas, separadores, etc)? Esses elementos estão na mesma posição, tamanho e cor? OBSERVAÇÃO IMPORTANTE: Ignore as tarjas pretas como elementos gráficos.
-6. Ambos layouts estão nas mesmas dimensões (altura e largura)?
-
+Comparar a ESTRUTURA visual de dois comprovantes: CHAVES (rótulos) e elementos gráficos fixos.
+Ignore TODOS os VALORES e TARJAS pretas.
 </MISSION>
 
+<DEFINICOES>
+CHAVES: rótulos/etiquetas (ex: "Nome do Beneficiário", "CPF", "Agência").  
+VALOR: conteúdo do campo — IGNORAR.  
+TARJA: bloco preto — IGNORAR.
+</DEFINICOES>
+
+<RULES>
+- Compare CHAVES por igualdade textual EXATA (sem sinônimos).  
+- Não invente CHAVES, posições ou coordenadas. Se não puder determinar posição, retorne "unknown".  
+- Tarjas pretas não são elementos gráficos.  
+- Considere diferença de cor quando for parte do layout (ex.: cabeçalho “Pix” verde).  
+- Saída deve ser APENAS JSON conforme o FORMATO_DE_RESPOSTA.
+</RULES>
+
+<CONFIDENCE_GUIDE>
+0.90–1.00: CHAVES iguais, mesma ordem, posições equivalentes.  
+0.70–0.89: CHAVES iguais, pequenas variações ≤5%.  
+0.40–0.69: CHAVES iguais, ordem diferente ou deslocamentos 5–15%.  
+0.00–0.39: CHAVES diferentes ou OCR falho.
+</CONFIDENCE_GUIDE>
+
 <FORMATO_DE_RESPOSTA>
-Após sua análise passo-a-passo, forneça o JSON final:
+Retorne somente JSON válido:
 
-```json
 {
-    "reason": "Traga uma análise detalhada do porquê os layouts são idênticos ou diferentes. Qual diferença você encontrou entre um layout e outro. 
-    IMPORTANTE: Seja detalhista em casos negativos, qual campo está diferente, qual campo está faltando, qual campo está em local diferente, etc.",
-    "is_match": true/false,
-    "confidence": 0.0-1.0
+  "reason": "<análise detalhada passo-a-passo>",
+  "is_match": true|false,
+  "confidence": 0.0-1.0
 }
-```
 </FORMATO_DE_RESPOSTA>
-
-<VALIDACAO_FINAL>
-- Se na sua análise você concluiu que os layouts são semelhantes e possuem as mesmas CHAAVES só com VALOR diferentes, considere como "is_match": true pois o objetivo é comparar layouts, não valores.
-</VALIDACAO_FINAL>
 """
         file_ext = Path(template_path).suffix.lower()
         if file_ext == ".pdf":
@@ -73,7 +70,7 @@ Após sua análise passo-a-passo, forneça o JSON final:
         )
 
         response = ollama.chat(
-            model="minicpm-v",
+            model="qwen2.5vl:7b",
             messages=[
                 {
                     "role": "user",
@@ -81,7 +78,7 @@ Após sua análise passo-a-passo, forneça o JSON final:
                     "images": image_paths,
                 }
             ],
-            options={"temperature": 0.0, "num_ctx": 4096},
+            options={"temperature": 0.0},
             format="json",
         )
 
