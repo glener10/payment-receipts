@@ -4,6 +4,7 @@ import cv2
 
 from src.modules.sensitive_data_masker.gemini import compare_with_gemini
 from src.modules.sensitive_data_masker.ollama import compare_with_ollama
+import random
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 PDF_EXTENSION = ".pdf"
@@ -12,6 +13,7 @@ PDF_EXTENSION = ".pdf"
 def find_best_template(input_path, bank_name, use_ollama=False):
     _, file_ext = os.path.splitext(input_path)
     templates = load_bank_templates(bank_name, file_ext)
+    random.shuffle(templates)
 
     if not templates:
         return None
