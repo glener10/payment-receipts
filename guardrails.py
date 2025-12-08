@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 from dotenv import load_dotenv
 import google.generativeai as genai
-from google.generativeai import types
+from google.ai.generativelanguage_v1beta.types import content
 import ollama
 
 
@@ -17,54 +17,86 @@ from src.utils.pdf import pdf_to_image
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
+response_schema = content.Schema(
+    type=content.Type.OBJECT,
+    enum=[],
+    required=["analysis", "has_sensitive_data", "leaked_fields"],
+    properties={
+        "analysis": content.Schema(
+            type=content.Type.STRING,
+            description="Explicação passo a passo. Se houver vazamento, descreva onde e o que foi lido.",
+        ),
+        "has_sensitive_data": content.Schema(
+            type=content.Type.BOOLEAN,
+            description="TRUE se houver qualquer PII (nome, cpf, conta) legível. FALSE se tudo estiver censurado/mascarado.",
+        ),
+        "leaked_fields": content.Schema(
+            type=content.Type.ARRAY,
+            description="Lista dos tipos de dados que vazaram (ex: ['NOME_DO_PAGADOR', 'CPF_DESTINATARIO']). Retorne lista vazia [] se tudo estiver seguro.",
+            items=content.Schema(type=content.Type.STRING),
+        ),
+    },
+)
+
+generation_config = {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+    "response_mime_type": "application/json",
+    "response_schema": response_schema,
+}
+
 genai.configure(api_key=gemini_api_key)
 gemini_client = genai.GenerativeModel(
-    model_name="gemini-2.5-flash",
-    generation_config=types.GenerationConfig(
-        response_mime_type="application/json",
-    ),
+    model_name="gemini-2.5-flash", generation_config=generation_config
 )
 
 prompt = """
 <PERSONA>
-Você é um Auditor de Privacidade (DLP - Data Loss Prevention) especializado em verificar se valores sensíveis foram corretamente anonimizados em comprovantes bancários.
+Você é um Auditor de Segurança da Informação (DLP) altamente cético. Sua única função é bloquear o vazamento de PII (Personally Identifiable Information).
 </PERSONA>
 
-<DEFINICOES>
-DADO_SENSIVEL: Qualquer VALOR que identifique uma pessoa ou conta, incluindo:
-- Nome de pessoa
-- CPF ou CNPJ
-- Chave Pix (qualquer tipo)
-- Agência e Conta bancária
+<CONTEXTO_VISUAL>
+Você está analisando comprovantes bancários (Pix/TED).
+- Estrutura típica: Um RÓTULO (ex: "Destinatário") seguido de um VALOR (ex: "João da Silva").
+- O usuário tentou anonimizar os VALORES aplicando tarjas pretas (retângulos sólidos).
+</CONTEXTO_VISUAL>
 
-ROTULO: A etiqueta/chave usada pelo layout (ex: “Nome do Beneficiário”, “CPF”). 
-Você deve IGNORAR todos os rótulos.
-</DEFINICOES>
+<DEFINICAO_DE_DADO_SENSIVEL>
+Considere como SENSÍVEL (Vazamento) se qualquer um destes estiver visível:
+1. Nomes de Pessoas (Pessoa Física). Nota: Nomes de Bancos ou Instituições de Pagamento NÃO são sensíveis.
+2. CPF ou CNPJ (parcial ou total).
+3. Agência e Conta.
+4. Chaves Pix (E-mail, Telefone, CPF).
+</DEFINICAO_DE_DADO_SENSIVEL>
 
-<MISSAO>
-Analise a imagem e verifique se ALGUM DADO_SENSIVEL aparece legível.
+<REGRAS_DE_OURO>
+1. **Rótulo != Valor:** O texto "CPF" ou "Nome" impresso no layout é apenas um rótulo. Isso é SEGURO. O vazamento só ocorre se o NÚMERO do CPF ou o NOME da pessoa estiver legível.
+2. **A Regra da Tarja:** - Se um valor está coberto por uma tarja preta sólida: SEGURO (Ignore).
+   - Se a tarja é translúcida e permite leitura: VAZAMENTO.
+   - Se a tarja cobre apenas metade do nome/número: VAZAMENTO.
+3. **Ignore (Safe List):**
+   - Valores monetários (R$ 50,00).
+   - Datas e Horários.
+   - IDs de Transação (sequências longas de letras e números aleatórios).
+   - Nomes de Bancos (ex: "Nubank", "Itaú", "Banco Central").
+   - Mensagens de rodapé.
+</REGRAS_DE_OURO>
 
-Regras de interpretação:
-- Foque apenas nos VALORES, nunca nos rótulos.
-- Se um valor deveria estar anonimizando e está coberto por TARJA PRETA sólida → considere MASACARADO.
-- Se apenas parte do valor estiver visível (mesmo 1 caractere) → has_sensitive_data = true.
-- Ignore preços, datas, horários, códigos de transação, identificadores internos, hashes, valores monetários e qualquer número que claramente não seja um dado sensível.
-- Considere que o comprovante pode estar em português ou inglês.
-</MISSAO>
+<PROCEDIMENTO_DE_ANALISE>
+Analise cada campo visualmente:
+Passo 1: Identifique um campo (ex: Nome do Favorecido).
+Passo 2: Olhe para o valor deste campo.
+Passo 3: O valor é legível? 
+    - NÃO (tem tarja preta) -> OK.
+    - SIM -> É um nome de banco ou dado da Safe List?
+        - SIM -> OK.
+        - NÃO -> ALERTA DE VAZAMENTO.
+</PROCEDIMENTO_DE_ANALISE>
 
-<CONDICAO_CRITICA>
-Se PELO MENOS UM DADO_SENSIVEL estiver parcialmente legível → retorne has_sensitive_data = true.
-Se TODOS os DADOS_SENSIVEIS estiverem totalmente cobertos por tarjas pretas → retorne has_sensitive_data = false.
-</CONDICAO_CRITICA>
-
-<FORMATO_DE_RESPOSTA>
-Responda estritamente no seguinte JSON:
-{
-    "analysis": "Descrição completa da sua análise, em casos negativos cite quais chaves e valores sensíveis apareceram legíveis.",
-    "has_sensitive_data": true/false
-}
-</FORMATO_DE_RESPOSTA>
-
+<FORMATO_RESPOSTA>
+Retorne apenas o JSON. Se encontrar vazamento, adicione o nome do campo em `leaked_fields`.
 """
 
 
