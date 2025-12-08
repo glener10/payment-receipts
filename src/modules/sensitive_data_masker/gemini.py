@@ -4,25 +4,43 @@ from dotenv import load_dotenv
 
 
 import google.generativeai as genai
-from google.generativeai import types
+from google.ai.generativelanguage_v1beta.types import content
 from pathlib import Path
 
 load_dotenv()
 gemini_api_key = os.getenv("GEMINI_API_KEY")
 
+response_schema = content.Schema(
+    type=content.Type.OBJECT,
+    enum=[],
+    required=["is_match", "confidence", "reason"],
+    properties={
+        "is_match": content.Schema(
+            type=content.Type.BOOLEAN,
+            description="True se as imagens compartilham exatamente o mesmo template/layout.",
+        ),
+        "confidence": content.Schema(
+            type=content.Type.NUMBER, description="Grau de certeza entre 0.0 e 1.0"
+        ),
+        "reason": content.Schema(
+            type=content.Type.STRING,
+            description="Explicação técnica citando as chaves encontradas e a ordem visual.",
+        ),
+    },
+)
+
+generation_config = {
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+    "response_mime_type": "application/json",
+    "response_schema": response_schema,
+}
+
 genai.configure(api_key=gemini_api_key)
 gemini_client = genai.GenerativeModel(
-    model_name="gemini-2.5-flash",
-    generation_config=types.GenerationConfig(
-        temperature=0.0,
-        top_p=1.0,
-        top_k=1,
-        presence_penalty=0.0,
-        frequency_penalty=0.0,
-        max_output_tokens=2048,
-        response_mime_type="application/json",
-        candidate_count=1,
-    ),
+    model_name="gemini-2.5-flash", generation_config=generation_config
 )
 
 
@@ -30,29 +48,40 @@ def compare_with_gemini(template_path, input_path):
     try:
         prompt = """
 <PERSONA>
-Você é um especialista em análise de documentos bancários.
+Você é um Analista Forense de Documentos Bancários especializado em detecção de fraude e verificação de templates.
 </PERSONA>
 
-<MISSION>
-Analise as duas imagens fornecidas e determine se elas têm o MESMO FORMATO/LAYOUT de comprovante bancário.
+<CONTEXTO>
+O objetivo é verificar se dois comprovantes de Pix pertencem ao mesmo "Layout Mestre" (mesmo banco, mesma versão de app).
+Você receberá duas imagens. Uma delas pode conter tarjas pretas (censura de dados sensíveis).
+</CONTEXTO>
 
-ATENÇÃO! IMPORTANTE!
+<INSTRUCOES_DE_VISAO>
+1.  **Ignore as Tarjas:** Trate tarjas pretas/coloridas cobrindo valores como "ruído irrelevante". O layout existe *através* delas.
+2.  **Foco nas Chaves (Keys):** Identifique os rótulos dos campos (ex: "Destinatário", "Valor", "Data", "ID da transação").
+3.  **Foco na Identidade Visual:** Logotipo do banco, cor de fundo do cabeçalho, fontes utilizadas.
+</INSTRUCOES_DE_VISAO>
 
-- Por mais que os comprovantes são do mesmo banco, eles podem ter dados diferentes, keys para mais, por exemplo um mostrar o "CPF" e outro não. Nesse caso você deve retornar is_match=false, pois os elementos visíveis não são os mesmos.
-- A primeira imagem (referência) pode ter dados mascarados com tarjas pretas - IGNORE essas tarjas, foque na disposição dos elementos
-- Compare apenas a ESTRUTURA, LAYOUT e FORMATO do documento, Os VALORES dos dados podem ser diferentes - isso é NORMAL.
-- Foque na localização de cada elemento, as keys de cada campo devem estar no mesmo local. Por exemplo se a key "nome" de uma imagem está no canto superior esquerdo, a outra imagem também deve ter a key "nome" no canto superior esquerdo.
-- Ambas imagens deve ter os mesmos elementos (keys) visíveis nas mesmas localizações/coordenadas, mesmo que os valores estejam diferentes ou mascarados.
+<ALGORITMO_DE_COMPARACAO>
+Execute mentalmente estes passos:
+1.  Identifique a instituição financeira de ambas as imagens. Se forem diferentes -> `is_match: false`.
+2.  Extraia a lista ordenada de CHAVES (Labels) da Imagem A (de cima para baixo).
+3.  Extraia a lista ordenada de CHAVES (Labels) da Imagem B (de cima para baixo).
+4.  Compare as duas listas. Elas devem ser idênticas em conteúdo e ordem.
+    * *Permissão:* Aceite pequenas variações de OCR ou corte de imagem (ex: rodapé cortado), desde que o "corpo" do comprovante seja igual.
+    * *Proibição:* Se a Imagem A tem os campos alinhados à esquerda e a Imagem B centralizados, isso é uma quebra de estrutura.
+</ALGORITMO_DE_COMPARACAO>
 
-Retorne APENAS um JSON válido (sem markdown, sem explicações extras) com:
-{{
-    "is_match": true/false,
-    "confidence": 0.0-1.0,
-    "reason": "explicação detalhada"
-}}
+<CRITERIOS_DE_CONFIANCA>
+- 1.0: Mesmo banco, logos idênticos, mesma lista de chaves na exata mesma ordem visual.
+- 0.8: Mesmo banco e estrutura, mas uma imagem tem qualidade inferior ou corte leve que dificulta leitura de 1 ou 2 chaves.
+- 0.2: Mesmo banco, mas layout diferente (ex: comprovante web vs comprovante mobile).
+- 0.0: Bancos diferentes ou documentos não relacionados.
+</CRITERIOS_DE_CONFIANCA>
 
-Seja rigoroso: apenas retorne is_match=true se tiver alta confiança (>85%).
-</MISSION>
+<FORMATO_DE_RESPOSTA>
+Responda APENAS com o JSON. Não inclua markdown (```json).
+Certifique-se de preencher o campo "reason" com a evidência: liste as chaves encontradas em ambos para justificar.
 """
 
         with open(template_path, "rb") as f:
