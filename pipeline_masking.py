@@ -49,7 +49,7 @@ def main():
         f"pipeline_2: executing sensitive_data_masker.py to mask files from {args.input} into {temp_masked_dir}"
     )
     subprocess.run(
-        f"python sensitive_data_masker.py -i '{args.input}' -o '{temp_masked_dir}'",
+        f"python sensitive_data_masker.py -i '{args.input}' -o '{temp_masked_dir}' --ollama",
         shell=True,
         check=True,
     )
@@ -58,7 +58,7 @@ def main():
         f"pipeline_2: executing guardrails.py to validate masked files from {temp_masked_dir} into {args.output}"
     )
     subprocess.run(
-        f"python guardrails.py -i '{temp_masked_dir}' -o '{args.output}'",
+        f"python guardrails.py -i '{temp_masked_dir}' -o '{args.output}' --ollama",
         shell=True,
         check=True,
     )
