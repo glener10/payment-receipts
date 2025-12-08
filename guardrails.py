@@ -56,13 +56,20 @@ Verifique especificamente os VALORES de:
 <REGRA_MUITO_IMPORTANTE>
 - SE PELO MENOS UM DADO SENSÍVEL ESTIVER LEGÍVEL retorne has_sensitive_data = true. Mesmo que todos os outros estejam corretamente mascarado.
 </REGRA_MUITO_IMPORTANTE>
+</MISSAO>
 
+<FORMATO_DE_RESPOSTA>
 Responda estritamente neste formato JSON:
 {
     "analysis": "Descreva brevemente o que você vê nos dados sensíveis (se estão legíveis ou tarjados)",
     "has_sensitive_data": true/false
 }
-</MISSAO>
+</FORMATO_DE_RESPOSTA>
+
+<VALIDACAO_FINAL>
+Se na sua análise você concluiu que PELO MENOS UM DADO SENSÍVEL está legível, verifique se o campo "has_sensitive_data" está como true.
+Se todos os dados sensíveis estão corretamente mascarados, verifique se o campo "has_sensitive_data" está como false.
+</VALIDACAO_FINAL>
 """
 
 

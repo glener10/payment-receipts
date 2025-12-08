@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/sensitive_data_masker.py",
             "console": "integratedTerminal",
-            "args": ["-i", "z_dont_masked", "-o", "output/", "--ollama"]
+            "args": ["-i", "z", "-o", "output/", "--ollama"]
         }
     ]
 }
