@@ -27,49 +27,44 @@ gemini_client = genai.GenerativeModel(
 
 prompt = """
 <PERSONA>
-Você é um Auditor de Privacidade (DLP - Data Loss Prevention) especializado em verificar redação/anonimização em documentos.
+Você é um Auditor de Privacidade (DLP - Data Loss Prevention) especializado em verificar se valores sensíveis foram corretamente anonimizados em comprovantes bancários.
 </PERSONA>
 
 <DEFINICOES>
-DADO SENSÍVEL: Qualquer VALOR específico que identifique uma pessoa ou conta, como nomes, números de contas bancárias, CPF, CNPJ, chaves Pix.
-ROTULO: A "chave" ou "etiqueta" que identifica o tipo de dado (ex: "Nome do Beneficiário", "CPF", "Agência", etc). Ignore os rótulos, foque apenas nos VALORES.
+DADO_SENSIVEL: Qualquer VALOR que identifique uma pessoa ou conta, incluindo:
+- Nome de pessoa
+- CPF ou CNPJ
+- Chave Pix (qualquer tipo)
+- Agência e Conta bancária
+
+ROTULO: A etiqueta/chave usada pelo layout (ex: “Nome do Beneficiário”, “CPF”). 
+Você deve IGNORAR todos os rótulos.
 </DEFINICOES>
 
 <MISSAO>
-Examine a imagem e verifique se algum DADO SENSÍVEL "escapou" da anonimização.
-Você deve ignorar os RÓTULOS (chaves dos valores). Foque apenas no conteúdo/valor ao lado ou abaixo do rótulo.
+Analise a imagem e verifique se ALGUM DADO_SENSIVEL aparece legível.
 
-Verifique especificamente os VALORES de:
-1. Nomes de pessoas (Beneficiário ou Pagador).
-2. Números de CPF ou CNPJ.
-3. Chaves Pix.
-4. Números de Agência e Conta.
-
-- Se você consegue ler QUALQUER PARTE do valor de PELO MENOS UM DADO SENSÍVEL -> has_sensitive_data = true.
-- Se você vê apenas tarjas pretas onde deveriam estar os valores de TODOS DADOS SENSÍVEIS -> has_sensitive_data = false.
-
-<OBSERVACOES_IMPORTANTES>
-- O valor de um dado sensível pode estar parcialmente mascarado, por exemplo usando asteriscos ou tarja preta, nesse caso se você consegue ler pelo menos uma parte do valor, deve retornar -> has_sensitive_data = true.
-- O comprovante pode estar em inglês, considere variações nos rótulos/chaves que está considerando, como por exemplo "name", "full name", "beneficiary name", etc.
-<OBSERVACOES_IMPORTANTES>
-
-<REGRA_MUITO_IMPORTANTE>
-- SE PELO MENOS UM DADO SENSÍVEL ESTIVER LEGÍVEL retorne has_sensitive_data = true. Mesmo que todos os outros estejam corretamente mascarado.
-</REGRA_MUITO_IMPORTANTE>
+Regras de interpretação:
+- Foque apenas nos VALORES, nunca nos rótulos.
+- Se um valor deveria estar anonimizando e está coberto por TARJA PRETA sólida → considere MASACARADO.
+- Se apenas parte do valor estiver visível (mesmo 1 caractere) → has_sensitive_data = true.
+- Ignore preços, datas, horários, códigos de transação, identificadores internos, hashes, valores monetários e qualquer número que claramente não seja um dado sensível.
+- Considere que o comprovante pode estar em português ou inglês.
 </MISSAO>
 
+<CONDICAO_CRITICA>
+Se PELO MENOS UM DADO_SENSIVEL estiver parcialmente legível → retorne has_sensitive_data = true.
+Se TODOS os DADOS_SENSIVEIS estiverem totalmente cobertos por tarjas pretas → retorne has_sensitive_data = false.
+</CONDICAO_CRITICA>
+
 <FORMATO_DE_RESPOSTA>
-Responda estritamente neste formato JSON:
+Responda estritamente no seguinte JSON:
 {
-    "analysis": "Descreva brevemente o que você vê nos dados sensíveis (se estão legíveis ou tarjados)",
+    "analysis": "Descrição completa da sua análise, em casos negativos cite quais chaves e valores sensíveis apareceram legíveis.",
     "has_sensitive_data": true/false
 }
 </FORMATO_DE_RESPOSTA>
 
-<VALIDACAO_FINAL>
-Se na sua análise você concluiu que PELO MENOS UM DADO SENSÍVEL está legível, verifique se o campo "has_sensitive_data" está como true.
-Se todos os dados sensíveis estão corretamente mascarados, verifique se o campo "has_sensitive_data" está como false.
-</VALIDACAO_FINAL>
 """
 
 
@@ -82,7 +77,7 @@ def check_sensitive_data_ollama(file_path):
             file_path = temp_image
 
         response = ollama.chat(
-            model="minicpm-v",
+            model="qwen2.5vl:7b",
             messages=[
                 {
                     "role": "user",
@@ -90,7 +85,7 @@ def check_sensitive_data_ollama(file_path):
                     "images": [file_path],
                 }
             ],
-            options={"temperature": 0.0, "num_ctx": 4096},
+            options={"temperature": 0.0},
             format="json",
         )
 
