@@ -4,6 +4,10 @@
 
 ⭐ Our Goal is 500 payment-receipts from 20 different institutions
 
+The workflow for receiving a new payment receipt is described in the image below.
+
+![new_payment_receipt_flow.png](./docs/new_payment_receipt_flow.png)
+
 <h3>🏁 Table of Contents</h3>
 
 <br>
@@ -115,87 +119,9 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
-To understand how the development pipeline works, take a look in the `.excalidraw` files in `docs/`
+To check important organizational codes and pipelines (formatting, folder structure), verify [README_organization.md](./README_organization.md)
 
-### 🔧 **Util - count.py**
-
-To count how many payment receipts we have in
-
-Ensure that the database structure is as follows:
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf
-│   └── sicredi/
-│       └── receipt2-Maria.pdf
-```
-
-To exec:
-
-```
-$ python count.py -i 'INPUT_FOLDER_PATH'
-```
-
-### 🔧 **Util - file_organizer.py**
-
-The result of the Google form search is a folder containing all the collected files in this format:
-
-FILE_NAME-NAME_SENDER.EXTENSION
-
-Exec with:
-
-```
-$ python file_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
-```
-
-Example output structure:
-
-```
-├── Joao/
-│   └── receipt-Joao.png
-├── Maria/
-│   ├── receipt-Maria.pdf
-│   └── receipt2-Maria.pdf
-```
-
-### 🔧 **Util - receipt_organizer.py**
-
-Use this script to enter a folder, read all the receipts, and use Gemini to identify which bank each receipt is from, moving the files to a categorized output
-
-Ensure your input folder structure is as follows:
-
-```
-├── Joao/
-│   └── receipt-Joao.png
-├── Maria/
-│   ├── receipt-Maria.pdf
-│   └── receipt2-Maria.pdf
-```
-
-To exec:
-
-```
-$ python receipt_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
-```
-
-Example output structure:
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf
-│   └── sicredi/
-│       └── receipt2-Maria.pdf
-```
-
-### 🔧 **Util - coordinates_config_setter.py**
+### 🐍 **coordinates_config_setter.py**
 
 This system masks sensitive data on payment receipts using template matching. It compares the visual structure of each file with pre-configured templates and applies the corresponding masking coordinates.
 
@@ -235,7 +161,7 @@ Steps:
 
 move files to `src/config/coordinates/BANK/`
 
-### 🔧 **Util - sensitive_data_masker.py**
+### 🐍 **sensitive_data_masker.py**
 
 This script masks sensitive data in payment receipts using coordinate templates. It automatically identifies the bank from the folder structure and applies the appropriate masking coordinates.
 
@@ -280,7 +206,7 @@ Example output structure (same as input):
 │       └── receipt2-Maria.pdf (masked)
 ```
 
-### 🔧 **Util - guardrails.py**
+### 🐍 **guardrails.py**
 
 This script validates masked payment receipts using Gemini AI to detect any remaining visible sensitive data. It ensures all sensitive information is properly covered by black masks.
 
@@ -322,25 +248,13 @@ Example output structure (only validated files):
 │       └── receipt2-Maria.pdf (validated)
 ```
 
-### 🌀 **Pipeline - pipeline_organization.py**
-
-This file is for organizing the receipts by name and then classifying them according to which bank they belong to.
-
-Running the components highlighted in [this file](./docs/pipeline_organization.excalidraw)
-
-Behind the scenes, we execute the scripts `file_organizer.py` and `receipt_organizer.py`.
-
-You exec using:
-
-```
-python pipeline_organization.py -i 'INPUT_FOLDER_PATH' -o 'OUTPUT_FOLDER_PATH'
-```
-
 ### 🌀 **Pipeline - pipeline_masking.py**
 
 This pipeline combines masking and validation of payment receipts. It executes `sensitive_data_masker.py` followed by `guardrails.py` to ensure only properly masked files reach the final output.
 
-Running the components highlighted in [this file](./docs/pipeline_masking.excalidraw)
+To understand how the pipeline works, take a look in the image:
+
+![pipeline_masking.png](./docs/pipeline_masking.png)
 
 Ensure your input folder structure is as follows:
 
