@@ -50,6 +50,8 @@ def find_best_template(input_path, bank_name, use_ollama=False):
                 "reason": result.get("reason", ""),
                 "is_match": is_match,
             }
+            if confidence == 1.0:
+                break
 
     if response:
         return response
