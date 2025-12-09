@@ -21,6 +21,8 @@ def find_best_template(input_path, bank_name, use_ollama=False):
     response = None
     best_confidence = 0.0
 
+    response_best_confidence = None
+
     compare_function = compare_with_ollama if use_ollama else compare_with_gemini
 
     for template in templates:
@@ -29,7 +31,18 @@ def find_best_template(input_path, bank_name, use_ollama=False):
         confidence = result.get("confidence", 0.0)
         is_match = result.get("is_match", False)
 
-        if not response or (confidence > best_confidence):
+        if (
+            not response_best_confidence
+            or response_best_confidence.get("confidence", 0.0) < confidence
+        ):
+            response_best_confidence = {
+                "template": template,
+                "confidence": confidence,
+                "reason": result.get("reason", ""),
+                "is_match": is_match,
+            }
+
+        if is_match and (confidence > best_confidence):
             best_confidence = confidence
             response = {
                 "template": template,
@@ -41,7 +54,7 @@ def find_best_template(input_path, bank_name, use_ollama=False):
     if response:
         return response
 
-    return None
+    return response_best_confidence
 
 
 def load_bank_templates(
