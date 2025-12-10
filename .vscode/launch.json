@@ -2,12 +2,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "sensitive_data_masker",
+            "name": "main",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/sensitive_data_masker.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
-            "args": ["-i", "z", "-o", "output/", "--ollama"]
+            "args": ["-i", "z", "-n", "nu"]
         }
     ]
 }

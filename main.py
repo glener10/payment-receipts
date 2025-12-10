@@ -1,0 +1,64 @@
+import argparse
+import os
+
+from src.usecases.load_templates import load_bank_templates
+
+
+def execute(input_path, bank_name, extension):
+    templates = load_bank_templates(bank_name, extension)
+    return templates
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Mask sensitive data")
+    parser.add_argument(
+        "-i",
+        "--input",
+        required=True,
+        help="Input file or directory. When using directory, use structure: /user/bank/files",
+    )
+    parser.add_argument(
+        "-o", "--output", default="output", help="Output directory (default: output)"
+    )
+    parser.add_argument(
+        "-n", "--name", required=False, help="bank name, use only your input is a file"
+    )
+    args = parser.parse_args()
+
+    input_path = os.path.realpath(args.input)
+
+    if not os.path.exists(input_path):
+        print(f"❌ Input path does not exist: {input_path}")
+        return
+
+    if os.path.isfile(input_path):
+        execute(input_path, args.name, os.path.splitext(input_path)[1])
+    else:
+        for root, _, files in os.walk(input_path):
+            for file in files:
+                _, ext = os.path.splitext(file)
+                if ext.lower() not in [
+                    ".png",
+                    ".jpg",
+                    ".jpeg",
+                    ".pdf",
+                ]:
+                    print(f"skipping unsupported file type: {file}")
+                    continue
+
+                file_path = os.path.join(root, file)
+
+                # Extract bank name from path structure: /user/bank/files
+                rel_path = os.path.relpath(file_path, input_path)
+                parts = rel_path.split(os.sep)
+
+                if len(parts) < 2:
+                    print(f"invalid path structure: {file_path}")
+                    continue
+                bank_name = parts[1]
+
+                execute(file_path, bank_name, ext)
+
+
+if __name__ == "__main__":
+    main()
