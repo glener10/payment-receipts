@@ -48,7 +48,7 @@ $ ollama run qwen2.5vl:7b
 
 This model yielded good results, but feel free to test others.
 
-**Gemini (Optional)**: Instead deepseek models, you can use the paid Google Gemini API for image comparison. However, **be cautious about sharing sensitive data from receipts**. If you choose to use Gemini, [configure a valid Gemini API Key](https://aistudio.google.com/apikey) and ensure you have a `.env` file with the environment variable **GEMINI_API_KEY**.
+Or you can use **Gemini** instead deepseek models, you **NEED to use the PAID Google Gemini API to not share sensitive informations**. If you choose to use Gemini, [configure a valid Gemini API Key](https://aistudio.google.com/apikey) and ensure you have a `.env` file with the environment variable **GEMINI_API_KEY**.
 
 To setup environment use (you will need [venv](https://docs.python.org/pt-br/3.13/library/venv.html)):
 
@@ -100,19 +100,19 @@ ln -s "/mnt/h/Meu Drive/dataset/" .
 
 ### Others users
 
-You will need a dataset folder in root folder like _/dataset/dataset/_. You can get the content in []()
+You will need a dataset folder in root folder like _/dataset/dataset/_. You can get the content in [put link of the dataset in Kaggle]()
 
 The format is:
 
 ```
 dataset/
-└── Glener Pizzolato/
+└── Glener/
     └── nu/
-        └── comprovante_1.png
+        └── receipt_1.png
 └── João/
     └── xp/
-        └── comprovante_1.png
-        └── comprovante_2.pdf
+        └── receipt_1.png
+        └── receipt_2.pdf
 ```
 
 <div id="using"></div>
@@ -121,138 +121,43 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
-### 🔥 Usecases
+This script masks sensitive data in payment receipts (or adapt it to your scenario.) using coordinate templates.
 
-### 🐍 **sensitive_data_masker.py**
-
-This script masks sensitive data in payment receipts using coordinate templates. It automatically identifies the bank from the folder structure and applies the appropriate masking coordinates.
-
-Ensure your input folder structure is as follows:
+To exec for one specified file:
 
 ```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf
-│   └── sicredi/
-│       └── receipt2-Maria.pdf
+$ python main.py -i 'example.jpeg' -n '99pay'
 ```
 
-To exec:
+To exec to all files in one directory:
 
 ```
-$ python sensitive_data_masker.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --ollama
+$ python main.py -i 'dataset'
 ```
 
-How it works:
+Ensure the folder structure is:
 
-1. Extracts the bank name from the folder structure (e.g., `Joao/nu/` → bank: `nu`)
-2. Loads templates only for that specific bank from `src/config/coordinates/BANK/`
-3. Filters templates by file type (images or PDFs)
-4. Uses Gemini AI to compare the input file with all templates of that bank
-5. Selects the template with highest confidence (≥85%)
-6. Scales coordinates if needed and applies black masks to sensitive areas
+```
+dataset/
+└── Glener/
+    └── nu/
+        └── receipt_1.png
+└── João/
+    └── xp/
+        └── receipt_1.png
+        └── receipt_2.pdf
+```
 
 Example output structure (same as input):
 
 ```
-├── Joao/
+├── Glener/
 │   └── nu/
-│       └── receipt-Joao.png (masked)
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf (masked)
-│   └── sicredi/
-│       └── receipt2-Maria.pdf (masked)
-```
-
-### 🐍 **guardrails.py**
-
-This script validates masked payment receipts using Gemini AI to detect any remaining visible sensitive data. It ensures all sensitive information is properly covered by black masks.
-
-Ensure your input folder contains masked files:
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png (masked)
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf (masked)
-│   └── sicredi/
-│       └── receipt2-Maria.pdf (masked)
-```
-
-To exec:
-
-```
-$ python guardrails.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH" --ollama
-```
-
-How it works:
-
-1. Scans all files in the input directory
-2. Uses Gemini AI to verify if sensitive data is visible (names, CPF, Pix keys, account numbers, etc.)
-3. Files that pass validation (no visible sensitive data) are **moved** to the output directory
-4. Files that fail validation (sensitive data still visible) remain in the input directory
-5. Empty directories in the input folder are automatically removed
-
-Example output structure (only validated files):
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png (validated)
-├── Maria/
-│   └── sicredi/
-│       └── receipt2-Maria.pdf (validated)
-```
-
-### 🌀 **Pipeline - pipeline_masking.py**
-
-This pipeline combines masking and validation of payment receipts. It executes `sensitive_data_masker.py` followed by `guardrails.py` to ensure only properly masked files reach the final output.
-
-To understand how the pipeline works, take a look in the image:
-
-![pipeline_masking.png](./docs/pipeline_masking.png)
-
-Ensure your input folder structure is as follows:
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf
-│   └── sicredi/
-│       └── receipt2-Maria.pdf
-```
-
-You exec using:
-
-```
-python pipeline_2.py -i 'INPUT_FOLDER_PATH' -o 'OUTPUT_FOLDER_PATH'
-```
-
-How it works:
-
-1. Executes `sensitive_data_masker.py` to apply masks → temporary folder
-2. Executes `guardrails.py` to validate masked files → output folder (only validated files)
-3. Removes successfully processed files from the input directory
-4. Cleans up empty directories in both input and temporary folders
-
-Example output structure (only validated files):
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png (masked and validated)
-├── Maria/
-│   └── sicredi/
-│       └── receipt2-Maria.pdf (masked and validated)
+│       └── receipt_1.png (masked)
+├── João/
+    └── xp/
+        └── receipt_1.png (masked)
+        └── receipt_2.pdf (masked)
 ```
 
 <div id="author"></div>

@@ -3,7 +3,7 @@ Check dependencies and environment in [README.md](../README.md)
 #### 🐍 **remove_empty_dirs.py**
 
 ```
-python scripts/remove_empty_dirs.py -i output
+$ python scripts/remove_empty_dirs.py -i output
 ```
 
 #### 🐍 **create_coordinates.py**
@@ -32,7 +32,7 @@ src/config/coordinates/
 To create a new config use:
 
 ```bash
-python scripts/create_coordinates.py -i 'INPUT_PATH'
+$ python scripts/create_coordinates.py -i 'INPUT_PATH'
 ```
 
 Steps:
