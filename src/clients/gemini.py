@@ -2,11 +2,14 @@ import json
 import os
 from dotenv import load_dotenv
 
-
+from google.generativeai import types
 import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
 from pathlib import Path
 
+from src.config.prompts.identify_bank_of_payment_receipt_prompt import (
+    get_identify_bank_of_payment_receipt_prompt,
+)
 from src.config.prompts.compare_templates_prompt import get_compare_templates_prompt
 from src.config.prompts.guardrails_prompt import get_guardrails_prompt
 from src.utils.mime_type import get_mime_type
@@ -158,3 +161,28 @@ def check_sensitive_data_with_gemini(file_path):
             "analysis": f"Error during check: {str(e)}",
             "leaked_fields": [],
         }
+
+
+def get_bank_of_payment_receipt(file_path: str) -> str:
+    try:
+        contents = [get_identify_bank_of_payment_receipt_prompt()]
+        with open(file_path, "rb") as f:
+            file_data = f.read()
+
+        file_ext = Path(file_path).suffix.lower()
+        mime_type = get_mime_type(file_ext)
+        contents.append({"mime_type": mime_type, "data": file_data})
+
+        genai.configure(api_key=gemini_api_key)
+        gemini_client = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            generation_config=types.GenerationConfig(
+                response_mime_type="text/plain",
+            ),
+        )
+        response = gemini_client.generate_content(contents=contents)
+
+        return {"classify": response.text, "path": file_path}
+    except Exception as e:
+        print(f"get_bank_of_receipt - error in {file_path}: {e}")
+        return {"classify": None, "path": file_path}
