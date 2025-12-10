@@ -26,10 +26,12 @@ def execute(input_path, bank_name, extension, output_path, use_ollama=False):
     guardrails = execute_guardrails(output_path, use_ollama)
     if guardrails["has_sensitive_data"]:
         print("guardrails check failed")
+        # TODO: decide if we want to keep or delete the output file by argument
         # os.remove(output_path)
         return None
 
     print("guardrails check passed")
+    # TODO: decide if we want to keep or delete the output file by argument
     # os.remove(input_path)
 
 
