@@ -48,6 +48,14 @@
             "program": "${workspaceFolder}/src/usecases/matcher.py",
             "console": "integratedTerminal",
             "args": ["-n", "99pay", "-i", "example.jpeg"]
+        },
+        {
+            "name": "usecase - get_bank_of_payment_receipt",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/usecases/get_bank_of_payment_receipt.py",
+            "console": "integratedTerminal",
+            "args": ["-i", "example.jpeg"]
         }
     ]
 }
