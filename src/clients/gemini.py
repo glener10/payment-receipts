@@ -7,7 +7,7 @@ import google.generativeai as genai
 from google.ai.generativelanguage_v1beta.types import content
 from pathlib import Path
 
-from src.config.prompts.masking_prompt import get_masking_prompt
+from config.prompts.compare_templates_prompt import get_compare_templates_prompt
 from src.utils.mime_type import get_mime_type
 
 load_dotenv()
@@ -47,9 +47,9 @@ gemini_client = genai.GenerativeModel(
 )
 
 
-def masking_with_gemini(template_path, input_path):
+def compare_templates_with_gemini(template_path, input_path):
     try:
-        prompt = get_masking_prompt()
+        prompt = get_compare_templates_prompt()
 
         with open(template_path, "rb") as f:
             template_data = f.read()

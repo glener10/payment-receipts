@@ -1,4 +1,4 @@
-def get_masking_prompt() -> str:
+def get_compare_templates_prompt() -> str:
     return """
 <PERSONA>
 Você é um Analista Forense de Documentos Bancários especializado em detecção de fraude e verificação de templates.
