@@ -1,8 +1,13 @@
 # python src/usecases/guardrails.py -i '1.jpeg'
 import os
+import sys
 
 from dotenv import load_dotenv
 
+if __name__ == "__main__":
+    sys.path.insert(
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+    )
 
 from src.clients.gemini import check_sensitive_data_with_gemini
 from src.clients.ollama import check_sensitive_data_with_ollama
