@@ -9,6 +9,45 @@
             "console": "integratedTerminal",
             "args": ["-i", "example.jpeg", "-n", "99pay"] //file
             //"args": ["-i", "z", "-n", "99pay"] //directory
+        },
+        {
+            "name": "usecase - guardrails",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/usecases/guardrails.py",
+            "console": "integratedTerminal",
+            "args": ["-i", "example.jpeg"]
+        },
+        {
+            "name": "usecase - load_templates",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/usecases/load_templates.py",
+            "console": "integratedTerminal",
+            "args": ["-n", "nu", "-e", ".pdf"]
+        },
+        {
+            "name": "usecase - masking",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/usecases/masking.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-i",
+                "example.jpeg",
+                "-o",
+                "output.jpeg",
+                "-c",
+                "src/config/coordinates/nu/coordinates_output_1.json"
+            ]
+        },
+        {
+            "name": "usecase - matcher",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/usecases/matcher.py",
+            "console": "integratedTerminal",
+            "args": ["-n", "99pay", "-i", "example.jpeg"]
         }
     ]
 }
