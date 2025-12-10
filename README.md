@@ -28,8 +28,6 @@ The workflow for receiving a new payment receipt is described in the image below
 
 ===================
 
-To check utility scripts, verify [scripts/README.md](/scripts/README.md)
-
 <div id="dependenciesandenvironment"></div>
 
 ## 💻 **Dependencies and Environment**
@@ -120,6 +118,10 @@ dataset/
 ## ☕ **Using**
 
 First, check the [dependencies](#dependenciesandenvironment) process
+
+To check utility scripts, verify [scripts/README.md](/scripts/README.md)
+
+All use cases can be called individually and have debugging configured.
 
 This script masks sensitive data in payment receipts (or adapt it to your scenario.) using coordinate templates.
 
