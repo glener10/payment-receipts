@@ -28,6 +28,8 @@ The workflow for receiving a new payment receipt is described in the image below
 
 ===================
 
+To check utility scripts, verify [scripts/README.md](/scripts/README.md)
+
 <div id="dependenciesandenvironment"></div>
 
 ## 💻 **Dependencies and Environment**
@@ -118,8 +120,6 @@ dataset/
 ## ☕ **Using**
 
 First, check the [dependencies](#dependenciesandenvironment) process
-
-To check important organizational codes and pipelines (formatting, folder structure), verify [README_organization.md](./README_organization.md)
 
 ### 🐍 **coordinates_config_setter.py**
 

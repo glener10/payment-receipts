@@ -15,51 +15,6 @@ This Readme explains some utility codes and how the files are organized in the f
 │       └── receipt2-Maria.pdf
 ```
 
-### 🐍 **Util - count.py**
-
-To count how many payment receipts we have in
-
-Ensure that the database structure is as follows:
-
-```
-├── Joao/
-│   └── nu/
-│       └── receipt-Joao.png
-├── Maria/
-│   ├── inter/
-│   │   └── receipt-Maria.pdf
-│   └── sicredi/
-│       └── receipt2-Maria.pdf
-```
-
-To exec:
-
-```
-$ python count.py -i 'INPUT_FOLDER_PATH'
-```
-
-### 🐍 **Util - file_organizer.py**
-
-The result of the Google form search is a folder containing all the collected files in this format:
-
-FILE_NAME-NAME_SENDER.EXTENSION
-
-Exec with:
-
-```
-$ python file_organizer.py -i "INPUT_FOLDER_PATH" -o "OUTPUT_FOLDER_PATH"
-```
-
-Example output structure:
-
-```
-├── Joao/
-│   └── receipt-Joao.png
-├── Maria/
-│   ├── receipt-Maria.pdf
-│   └── receipt2-Maria.pdf
-```
-
 ### 🐍 **Util - receipt_organizer.py**
 
 Use this script to enter a folder, read all the receipts, and use Gemini to identify which bank each receipt is from, moving the files to a categorized output
