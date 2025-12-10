@@ -123,46 +123,6 @@ First, check the [dependencies](#dependenciesandenvironment) process
 
 ### 🔥 Usecases
 
-#### 🐍 **create_coordinates.py**
-
-This system masks sensitive data on payment receipts using template matching. It compares the visual structure of each file with pre-configured templates and applies the corresponding masking coordinates.
-
-Folder structure for new coordinates configs
-
-```
-src/config/coordinates/
-├── nu/
-│   ├── coordinates_output_a.json
-│   ├── coordinates_output_a.png
-│   ├── coordinates_output_b.json
-│   └── coordinates_output_b.png
-├── bradesco/
-│   ├── coordinates_output_a.json
-│   └── coordinates_output_a.png
-└── [others]/
-    └── ...
-```
-
--   **`.json`**: Coordinates of sensitive areas
--   **`.png` || `.pdf`**: Reference image (masked)
-
-To create a new config use:
-
-```bash
-python src/usecases/create_coordinates.py -i 'INPUT_PATH'
-```
-
-Steps:
-
-1. Draw rectangles over the sensitive data
-2. Press **'q'** to exit
-3. The following will be generated:
-
--   `coordinates_output.json` - coordinates
--   `coordinates_output.png` - masked image
-
-move files to `src/config/coordinates/BANK/`
-
 ### 🐍 **sensitive_data_masker.py**
 
 This script masks sensitive data in payment receipts using coordinate templates. It automatically identifies the bank from the folder structure and applies the appropriate masking coordinates.
