@@ -1,5 +1,11 @@
 Check dependencies and environment in [README.md](../README.md)
 
+#### 🐍 **remove_empty_dirs.py**
+
+```
+python scripts/remove_empty_dirs.py -i output
+```
+
 #### 🐍 **create_coordinates.py**
 
 This system masks sensitive data on payment receipts using template matching. It compares the visual structure of each file with pre-configured templates and applies the corresponding masking coordinates.
