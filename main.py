@@ -4,7 +4,7 @@ import os
 from src.usecases.load_templates import load_bank_templates
 
 
-def execute(input_path, bank_name, extension):
+def execute(input_path, bank_name, extension, use_ollama=False):
     templates = load_bank_templates(bank_name, extension)
     return templates
 
@@ -23,6 +23,11 @@ def main():
     parser.add_argument(
         "-n", "--name", required=False, help="bank name, use only your input is a file"
     )
+    parser.add_argument(
+        "--ollama",
+        action="store_true",
+        help="use local model via Ollama instead of Gemini (better privacy)",
+    )
     args = parser.parse_args()
 
     input_path = os.path.realpath(args.input)
@@ -32,7 +37,7 @@ def main():
         return
 
     if os.path.isfile(input_path):
-        execute(input_path, args.name, os.path.splitext(input_path)[1])
+        execute(input_path, args.name, os.path.splitext(input_path)[1], args.ollama)
     else:
         for root, _, files in os.walk(input_path):
             for file in files:
@@ -57,7 +62,7 @@ def main():
                     continue
                 bank_name = parts[1]
 
-                execute(file_path, bank_name, ext)
+                execute(file_path, bank_name, ext, args.ollama)
 
 
 if __name__ == "__main__":
