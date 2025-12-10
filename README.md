@@ -121,7 +121,9 @@ dataset/
 
 First, check the [dependencies](#dependenciesandenvironment) process
 
-### 🐍 **coordinates_config_setter.py**
+### 🔥 Usecases
+
+#### 🐍 **create_coordinates.py**
 
 This system masks sensitive data on payment receipts using template matching. It compares the visual structure of each file with pre-configured templates and applies the corresponding masking coordinates.
 
@@ -147,7 +149,7 @@ src/config/coordinates/
 To create a new config use:
 
 ```bash
-python coordinates_config_setter.py -i 'INPUT_PATH'
+python src/usecases/create_coordinates.py -i 'INPUT_PATH'
 ```
 
 Steps:
