@@ -13,8 +13,15 @@ from src.clients.gemini import compare_templates_with_gemini
 from src.usecases.load_templates import load_bank_templates
 
 
-def match_template(input_path, bank_name, file_extension, use_ollama=False):
-    templates = load_bank_templates(bank_name, file_extension)
+def match_template(
+    input_path,
+    templates=None,
+    use_ollama=False,
+    bank_name=None,
+    file_extension=None,
+):
+    if not templates:
+        templates = load_bank_templates(bank_name, file_extension)
 
     if not templates:
         print(
@@ -62,7 +69,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     extension = os.path.splitext(args.input)[1]
-    result = match_template(args.input, args.name, extension, args.ollama)
+    result = match_template(
+        args.input,
+        templates=None,
+        use_ollama=args.ollama,
+        bank_name=args.name,
+        file_extension=extension,
+    )
 
     if result:
         print(f"best match: {result['name']}{result['file_extension']}")
