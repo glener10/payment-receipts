@@ -26,11 +26,11 @@ def execute(input_path, bank_name, extension, output_path, use_ollama=False):
     guardrails = execute_guardrails(output_path, use_ollama)
     if guardrails["has_sensitive_data"]:
         print("guardrails check failed")
-        os.remove(output_path)
+        # os.remove(output_path)
         return None
 
     print("guardrails check passed")
-    os.remove(input_path)
+    # os.remove(input_path)
 
 
 def main():
