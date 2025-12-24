@@ -12,6 +12,9 @@ from src.config.prompts.identify_bank_of_payment_receipt_prompt import (
 )
 from src.config.prompts.compare_templates_prompt import get_compare_templates_prompt
 from src.config.prompts.guardrails_prompt import get_guardrails_prompt
+from src.config.prompts.generate_payment_receipt_prompt import (
+    get_generate_payment_receipt_prompt,
+)
 from src.utils.mime_type import get_mime_type
 
 load_dotenv()
@@ -186,3 +189,52 @@ def get_bank_of_payment_receipt(file_path: str) -> str:
     except Exception as e:
         print(f"get_bank_of_receipt - error in {file_path}: {e}")
         return {"classify": None, "path": file_path}
+
+
+def generate_payment_receipt_with_gemini(templates, output_path):
+    try:
+        genai.configure(api_key=gemini_api_key)
+
+        generation_config = {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": 8192,
+        }
+
+        contents = [get_generate_payment_receipt_prompt()]
+
+        for template_path in templates:
+            with open(template_path, "rb") as f:
+                template_data = f.read()
+
+            file_ext = Path(template_path).suffix.lower()
+            mime_type = get_mime_type(file_ext)
+
+            contents.append({"mime_type": mime_type, "data": template_data})
+
+        response = genai.GenerativeModel(
+            model_name="gemini-2.5-flash-image", generation_config=generation_config
+        ).generate_content(contents=contents)
+
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+
+        for part in response.parts:
+            if part.inline_data is not None and len(part.inline_data.data) > 0:
+                with open(output_path, "wb") as f:
+                    f.write(part.inline_data.data)
+                return {
+                    "success": True,
+                    "output_path": output_path,
+                    "templates_used": len(templates),
+                    "mime_type": part.inline_data.mime_type,
+                }
+
+        return {"success": False, "error": "no image data in response"}
+
+    except Exception as e:
+        error_msg = f"error to generate payment receipt image: {str(e)}"
+        print(f"{error_msg}")
+        return {"success": False, "error": error_msg}
