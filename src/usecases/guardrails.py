@@ -2,8 +2,6 @@
 import os
 import sys
 
-from dotenv import load_dotenv
-
 if __name__ == "__main__":
     sys.path.insert(
         0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -11,9 +9,6 @@ if __name__ == "__main__":
 
 from src.clients.gemini import check_sensitive_data_with_gemini
 from src.clients.ollama import check_sensitive_data_with_ollama
-
-load_dotenv()
-gemini_api_key = os.getenv("GEMINI_API_KEY")
 
 
 def execute_guardrails(input_path, use_ollama=False):
