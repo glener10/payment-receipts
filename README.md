@@ -8,6 +8,13 @@ The workflow for receiving a new payment receipt is described in the image below
 
 ![new_payment_receipt_flow.png](./docs/new_payment_receipt_flow.png)
 
+Next Steps:
+
+-   Generate payment receipt
+    -   ✖️ Testing using nano banana (gemini-2.5-flash-image): generate a new full image
+    -   🛠️ Testing using ML: Use tensorflow
+    -   Testing using Semantic anchors: Use OpenCV or anothers libs
+
 <h3>🏁 Table of Contents</h3>
 
 <br>
@@ -81,19 +88,25 @@ First of all install Google Drive desktop
 Create a folder in Linux to mount the corresponding Google Drive folder in Windows (created only once, change "h" if needed).
 
 ```cmd
-sudo mkdir -p /mnt/h
+$ sudo mkdir -p /mnt/h
+
+$ sudo mkdir -p /mnt/g
 ```
 
 Mount in WSL2 using (change "h" if needed):
 
 ```cmd
 sudo mount -t drvfs H: /mnt/h
+
+sudo mount -t drvfs G: /mnt/g
 ```
 
 And link dataset in Google Drive to a folder in WSL2, in root folder use:
 
 ```cmd
 ln -s "/mnt/h/Meu Drive/dataset/" .
+
+ln -s "/mnt/g/Meu Drive/PPGES/disciplinas/LIAA/dataset_just_banks_and_random_name/" .
 ```
 
 ### Others users
