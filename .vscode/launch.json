@@ -56,6 +56,21 @@
             "program": "${workspaceFolder}/src/usecases/get_bank_of_payment_receipt.py",
             "console": "integratedTerminal",
             "args": ["-i", "example.jpeg"]
+        },
+        {
+            "name": "usecase - ml_generate_fake_payment_receipt",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/usecases/ml_generate_fake_payment_receipt.py",
+            "console": "integratedTerminal",
+            "args": [
+                "-i",
+                "dataset_just_banks_and_random_name",
+                "-b",
+                "nu",
+                "-e",
+                "jpeg"
+            ]
         }
     ]
 }
