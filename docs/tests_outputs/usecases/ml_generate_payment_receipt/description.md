@@ -11,6 +11,7 @@ For each image in your anonymized dataset, you need to know exactly where the bl
 Tool: You need a robust OCR that returns not only the text, but also the Bounding Boxes (the coordinates of the rectangle that encloses each word or line).
 
 Recommendation: Google Cloud Vision API, AWS Textract, or Azure Form Recognizer are far superior to open-source options (like Tesseract) for complex and varied layouts.
+https://docs.cloud.google.com/vision/docs/detect-labels-image-client-libraries?hl=pt-br&_gl=1*1ulj9x3*_up*MQ..&gclid=Cj0KCQiApfjKBhC0ARIsAMiR_IuxO0NbZ23w1yOD-u7vgfyP3RH3Nah6JT77kk8XEeM7RXeUqIiqjAoaAsVpEALw_wcB&gclsrc=aw.ds#client-libraries-usage-python
 
 Output of this step: A JSON for each image saying: "At coordinates (x100, y200) to (x300, y250) there is text that appears to be a monetary value, the background is light gray #F0F0F0 and the text is black #000000".
 
