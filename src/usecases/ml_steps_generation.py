@@ -190,6 +190,33 @@ def detect_masked_regions(image):
     return debug_image, detected_regions
 
 
+def collect_user_values_for_regions(enriched_regions):
+    print("\n=== Interactive Value Collection ===")
+    print("For each detected region, enter the actual value.\n")
+
+    for region in enriched_regions:
+        index = region["index"]
+        coords = region["coordinates"]
+        label = region["label"]
+
+        x, y, w, h = coords["x"], coords["y"], coords["width"], coords["height"]
+
+        print(f"\nRegion {index}:")
+        print(f"  Position: x={x}, y={y}, width={w}, height={h}")
+        print(f"  Detected label: '{label}'")
+
+        user_value = input(f"  Enter value (or press Enter to skip): ").strip()
+
+        if user_value:
+            region["value"] = user_value
+            print(f"  ✓ Value set: '{user_value}'")
+        else:
+            region["value"] = ""
+            print(f"  ⊘ Skipped")
+
+    return enriched_regions
+
+
 def execute_ml_steps_generation(input_file, output_folder=None):
     if not os.path.exists(input_file):
         print(f"Error: Input file '{input_file}' not found")
@@ -222,6 +249,8 @@ def execute_ml_steps_generation(input_file, output_folder=None):
         }
         enriched_regions.append(enriched_region)
         print(f"  Label: '{label}'")
+
+    enriched_regions = collect_user_values_for_regions(enriched_regions)
 
     output_path = None
     json_path = None
@@ -271,7 +300,6 @@ if __name__ == "__main__":
     parser.add_argument(
         "-o",
         "--output",
-        help="Output folder to save detection results",
     )
     args = parser.parse_args()
 
