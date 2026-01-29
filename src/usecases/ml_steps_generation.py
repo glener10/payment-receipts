@@ -9,6 +9,7 @@ if __name__ == "__main__":
 
 import cv2
 import json
+import numpy as np
 
 import pytesseract
 
@@ -190,6 +191,163 @@ def detect_masked_regions(image):
     return debug_image, detected_regions
 
 
+def inpaint_regions_from_json(image, json_data, output_folder=None):
+    """
+    Inpaint masked regions using data from JSON analysis file.
+    Replaces black masks with background color and renders the extracted text values.
+
+    Args:
+        image: Input image (with black masks)
+        json_data: Dictionary with regions data from analysis
+        output_folder: Optional folder to save debug images
+
+    Returns:
+        Restored image with masks replaced and text rendered
+    """
+    print("\n--- Inpainting Masked Regions and Rendering Values ---")
+
+    restored_image = image.copy()
+
+    regions = json_data.get("regions", [])
+    print(f"Processing {len(regions)} regions for inpainting...")
+
+    for region in regions:
+        coords = region["coordinates"]
+        x = coords["x"]
+        y = coords["y"]
+        w = coords["width"]
+        h = coords["height"]
+        region_idx = region["index"]
+        value = region.get("value", "")
+
+        print(f"\nRegion {region_idx} at (x={x}, y={y}, w={w}, h={h}): Processing...")
+        print(f"  - Value to render: '{value}'")
+
+        try:
+            # Get the dominant background color around the region
+            border_size = 15
+            bg_colors = []
+
+            # Sample colors from borders around the region
+            # Top border
+            if y > border_size:
+                top_roi = image[max(0, y - border_size) : y, x : x + w]
+                if top_roi.size > 0:
+                    bg_colors.append(cv2.mean(top_roi)[:3])
+
+            # Bottom border
+            if y + h < image.shape[0] - border_size:
+                bottom_roi = image[
+                    y + h : min(image.shape[0], y + h + border_size), x : x + w
+                ]
+                if bottom_roi.size > 0:
+                    bg_colors.append(cv2.mean(bottom_roi)[:3])
+
+            # Left border
+            if x > border_size:
+                left_roi = image[y : y + h, max(0, x - border_size) : x]
+                if left_roi.size > 0:
+                    bg_colors.append(cv2.mean(left_roi)[:3])
+
+            # Right border
+            if x + w < image.shape[1] - border_size:
+                right_roi = image[
+                    y : y + h, x + w : min(image.shape[1], x + w + border_size)
+                ]
+                if right_roi.size > 0:
+                    bg_colors.append(cv2.mean(right_roi)[:3])
+
+            # Calculate average background color
+            if bg_colors:
+                avg_bg_color = tuple(
+                    int(np.mean([c[i] for c in bg_colors])) for i in range(3)
+                )
+                print(f"  - Detected background color (BGR): {avg_bg_color}")
+
+                # Fill the region with the average background color
+                restored_image[y : y + h, x : x + w] = avg_bg_color
+
+                # Apply bilateral filter to smooth the region and blend edges
+                region_roi = restored_image[y : y + h, x : x + w]
+                smoothed = cv2.bilateralFilter(region_roi, 9, 75, 75)
+                restored_image[y : y + h, x : x + w] = smoothed
+
+                # Apply morphological closing to fill small holes
+                kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+                morphed = cv2.morphologyEx(smoothed, cv2.MORPH_CLOSE, kernel)
+                restored_image[y : y + h, x : x + w] = morphed
+
+                print(f"  ✓ Background filled")
+
+                # If value exists, render it on the region
+                if value and len(value) > 0:
+                    # Get text color from color_analysis (should be black/dark)
+                    text_color = (0, 0, 0)  # Default to black (BGR format)
+                    if "color_analysis" in region and region["color_analysis"].get(
+                        "color_detected"
+                    ):
+                        color_chars = region["color_analysis"]["characteristics"]
+                        # If it's black/dark gray, use dark color
+                        if color_chars.get("color_name") == "black":
+                            text_color = (0, 0, 0)
+                        else:
+                            text_color = (50, 50, 50)  # Dark gray if not pure black
+
+                    # Calculate font size based on region height
+                    font_scale = max(0.3, min(1.0, h / 30.0))
+                    font_thickness = max(1, int(h / 40))
+                    font = cv2.FONT_HERSHEY_SIMPLEX
+
+                    # Get text size to center it
+                    text_size = cv2.getTextSize(
+                        value, font, font_scale, font_thickness
+                    )[0]
+
+                    # Calculate position to center text in region
+                    text_x = x + max(2, (w - text_size[0]) // 2)
+                    text_y = y + max(text_size[1] + 2, (h + text_size[1]) // 2)
+
+                    # Put text on the image
+                    cv2.putText(
+                        restored_image,
+                        value,
+                        (text_x, text_y),
+                        font,
+                        font_scale,
+                        text_color,
+                        font_thickness,
+                    )
+
+                    print(
+                        f"  ✓ Text rendered: '{value}' (color: {text_color}, size: {font_scale:.2f})"
+                    )
+                else:
+                    print(f"  - No value to render")
+
+                if output_folder:
+                    os.makedirs(output_folder, exist_ok=True)
+
+                    # Save intermediate results for debugging
+                    cv2.imwrite(
+                        os.path.join(output_folder, f"inpaint_{region_idx}_filled.jpg"),
+                        restored_image,
+                    )
+            else:
+                # Fallback: just fill with white if no background detected
+                restored_image[y : y + h, x : x + w] = (255, 255, 255)
+                print(
+                    f"  ⚠ Region {region_idx}: No background detected, filled with white"
+                )
+
+        except Exception as e:
+            print(f"  ⚠ Error processing region {region_idx}: {e}")
+            import traceback
+
+            traceback.print_exc()
+
+    return restored_image
+
+
 def collect_user_values_for_regions(enriched_regions):
     print("\n=== Interactive Value Collection ===")
     print("For each detected region, enter the actual value.\n")
@@ -254,6 +412,7 @@ def execute_ml_steps_generation(input_file, output_folder=None):
 
     output_path = None
     json_path = None
+    restored_image_path = None
 
     if output_folder:
         os.makedirs(output_folder, exist_ok=True)
@@ -276,11 +435,20 @@ def execute_ml_steps_generation(input_file, output_folder=None):
 
         print(f"Analysis JSON saved: {json_path}")
 
+        # Inpaint regions using the JSON data
+        restored_image = inpaint_regions_from_json(image, result_json, output_folder)
+
+        # Save restored image
+        restored_image_path = os.path.join(output_folder, f"{base_name}_restored.jpg")
+        cv2.imwrite(restored_image_path, restored_image)
+        print(f"Restored image saved: {restored_image_path}")
+
     return {
         "input_file": input_file,
         "detected_regions": detected_regions,
         "enriched_regions": enriched_regions,
         "debug_image_path": output_path,
+        "restored_image_path": restored_image_path,
         "json_path": json_path,
     }
 
