@@ -1,10 +1,10 @@
-# python src/usecases/ml_steps_generation.py -i 'dataset_just_banks_and_random_name/nu/0ercxg1eypyb_1766015257435.jpeg' -o 'output'
+# python src/usecases/payment_receipt_generation/ml_steps_generation.py -i 'dataset_just_banks_and_random_name/nu/0ercxg1eypyb_1766015257435.jpeg' -o 'output'
 import os
 import sys
 
 if __name__ == "__main__":
     sys.path.insert(
-        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
     )
 
 import cv2
