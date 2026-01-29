@@ -1,4 +1,4 @@
-# python src/usecases/ml_generate_fake_payment_receipt.py -i 'dataset_just_banks_and_random_name' -b 'nu' -e 'jpeg'
+# python src/usecases/payment_receipt_generation/base_ml_generate_payment_receipt.py -i 'dataset_just_banks_and_random_name' -b 'nu' -e 'jpeg'
 import os
 import sys
 

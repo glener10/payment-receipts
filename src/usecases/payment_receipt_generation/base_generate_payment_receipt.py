@@ -1,4 +1,4 @@
-# python src/usecases/generate_payment_receipt.py -i templates/anonimizados -e pdf -o output/generated_receipts
+# python src/usecases/payment_receipt_generation/base_generate_payment_receipt.py -i 'dataset_just_banks_and_random_name/nu' -e pdf -o output/generated_receipts -l 2
 # https://github.com/Gnoario/deepfake-inspector/blob/main/model.py train with tensorflow or other
 import argparse
 import os
@@ -7,7 +7,7 @@ from pathlib import Path
 
 if __name__ == "__main__":
     sys.path.insert(
-        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+        0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
     )
 
 from src.clients.gemini import generate_payment_receipt_with_gemini
