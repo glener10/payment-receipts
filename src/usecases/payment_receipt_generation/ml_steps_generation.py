@@ -12,9 +12,7 @@ if __name__ == "__main__":
     )
 
 
-def detect_text_characteristics_from_region(
-    region_roi, region_index=0, debug_folder=None
-):
+def detect_text_characteristics_from_region(region_roi, debug_folder, region_index=0):
     if region_roi is None or region_roi.size == 0:
         return {"detected": False, "characteristics": {}}
 
@@ -107,12 +105,11 @@ def detect_text_characteristics_from_region(
             "confidence": 70,
         }
 
-        if debug_folder:
-            os.makedirs(debug_folder, exist_ok=True)
-            cv2.imwrite(
-                os.path.join(debug_folder, f"text_analysis_{region_index}_edges.jpg"),
-                edges,
-            )
+        os.makedirs(debug_folder, exist_ok=True)
+        cv2.imwrite(
+            os.path.join(debug_folder, f"text_analysis_{region_index}_edges.jpg"),
+            edges,
+        )
 
         return {"detected": True, "characteristics": characteristics}
 
@@ -121,9 +118,7 @@ def detect_text_characteristics_from_region(
         return {"detected": False, "characteristics": {}, "error": str(e)}
 
 
-def identify_region_type_from_left(
-    image, x, y, w, h, debug_folder=None, region_index=0
-):
+def identify_region_type_from_left(image, x, y, w, h, debug_folder, region_index=0):
     if min(x, 350) < 10 or (x - 5) <= 0 or (y + h) <= y:
         return ""
 
@@ -131,11 +126,8 @@ def identify_region_type_from_left(
     if left_roi.size == 0:
         return ""
 
-    if debug_folder:
-        os.makedirs(debug_folder, exist_ok=True)
-        cv2.imwrite(
-            os.path.join(debug_folder, f"roi_left_{region_index}.jpg"), left_roi
-        )
+    os.makedirs(debug_folder, exist_ok=True)
+    cv2.imwrite(os.path.join(debug_folder, f"roi_left_{region_index}.jpg"), left_roi)
 
     try:
         gray = cv2.cvtColor(left_roi, cv2.COLOR_BGR2GRAY)
@@ -166,21 +158,18 @@ def identify_region_type_from_left(
         else:
             extracted = min(non_empty, key=lambda x: len(x[1]))[1]
 
-        if debug_folder:
-            cv2.imwrite(
-                os.path.join(debug_folder, f"roi_{region_index}_otsu.jpg"), thresh
-            )
-            cv2.imwrite(
-                os.path.join(debug_folder, f"roi_{region_index}_resized.jpg"), resized
-            )
-            with open(
-                os.path.join(debug_folder, f"roi_left_{region_index}_text.txt"),
-                "w",
-                encoding="utf-8",
-            ) as f:
-                f.write(f"Selected: {extracted}\n\n")
-                for cfg, t in texts:
-                    f.write(f"{cfg}:\n{t}\n\n")
+        cv2.imwrite(os.path.join(debug_folder, f"roi_{region_index}_otsu.jpg"), thresh)
+        cv2.imwrite(
+            os.path.join(debug_folder, f"roi_{region_index}_resized.jpg"), resized
+        )
+        with open(
+            os.path.join(debug_folder, f"roi_left_{region_index}_text.txt"),
+            "w",
+            encoding="utf-8",
+        ) as f:
+            f.write(f"Selected: {extracted}\n\n")
+            for cfg, t in texts:
+                f.write(f"{cfg}:\n{t}\n\n")
 
         return extracted.strip()
     except Exception:
@@ -342,7 +331,7 @@ def collect_user_values_for_regions(image, enriched_regions, output_folder=None)
             region["value"] = user_value
             value_roi = image[y : y + h, x : x + w]
             text_chars = detect_text_characteristics_from_region(
-                value_roi, index, output_folder
+                value_roi, output_folder, index
             )
             region["text_analysis"] = text_chars
         else:
