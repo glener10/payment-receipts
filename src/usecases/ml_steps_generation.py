@@ -14,6 +14,129 @@ import numpy as np
 import pytesseract
 
 
+def detect_text_characteristics_from_region(
+    region_roi, region_index=0, debug_folder=None
+):
+    """
+    Detect comprehensive text characteristics from a masked region.
+    Analyzes font properties, color, alignment, and style.
+
+    Returns a dict with detailed text characteristics.
+    """
+    if region_roi is None or region_roi.size == 0:
+        return {"detected": False, "characteristics": {}}
+
+    try:
+        # Convert to grayscale
+        if len(region_roi.shape) == 3:
+            gray = cv2.cvtColor(region_roi, cv2.COLOR_BGR2GRAY)
+        else:
+            gray = region_roi
+
+        _, thresh = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+
+        # Detect edges to analyze stroke characteristics
+        edges = cv2.Canny(gray, 100, 200)
+        contours, _ = cv2.findContours(
+            edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+
+        # Analyze stroke width
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+        eroded = cv2.erode(thresh, kernel, iterations=1)
+        white_pixels_original = cv2.countNonZero(thresh)
+        white_pixels_eroded = cv2.countNonZero(eroded)
+
+        stroke_width = "normal"
+        if white_pixels_eroded < white_pixels_original * 0.3:
+            stroke_width = "bold"
+        elif white_pixels_eroded > white_pixels_original * 0.7:
+            stroke_width = "light"
+
+        # Detect serif characteristics
+        serif_indicators = 0
+        if len(contours) > 0:
+            small_contours = [
+                cnt
+                for cnt in contours
+                if cv2.contourArea(cnt) < 50 and cv2.contourArea(cnt) > 5
+            ]
+            serif_indicators = len(small_contours)
+
+        has_serifs = (
+            serif_indicators > len(contours) * 0.1 if len(contours) > 0 else False
+        )
+        font_style = "serif" if has_serifs else "sans-serif"
+
+        # Detect text color from non-masked pixels
+        hsv = cv2.cvtColor(region_roi, cv2.COLOR_BGR2HSV)
+        lower_white = np.array([0, 0, 200])
+        upper_white = np.array([180, 50, 255])
+        mask_inv = cv2.bitwise_not(cv2.inRange(hsv, lower_white, upper_white))
+
+        h_values = hsv[mask_inv > 0, 0]
+        s_values = hsv[mask_inv > 0, 1]
+        v_values = hsv[mask_inv > 0, 2]
+
+        text_color = "unknown"
+        hex_color = "#000000"
+
+        if len(h_values) > 0:
+            avg_h = int(np.mean(h_values))
+            avg_s = int(np.mean(s_values))
+            avg_v = int(np.mean(v_values))
+
+            # Convert HSV to RGB for hex
+            hsv_array = np.uint8([[[avg_h, avg_s, avg_v]]])
+            rgb_array = cv2.cvtColor(hsv_array, cv2.COLOR_HSV2RGB)
+            r, g, b = rgb_array[0][0]
+            hex_color = "#{:02X}{:02X}{:02X}".format(int(r), int(g), int(b))
+
+            # Classify color
+            if avg_s < 50:
+                text_color = "black" if avg_v < 100 else "gray"
+            else:
+                text_color = "colored"
+
+        # Detect horizontal alignment by analyzing text distribution
+        moments = cv2.moments(thresh)
+        if moments["m00"] != 0:
+            cx = int(moments["m10"] / moments["m00"])
+            region_center_x = region_roi.shape[1] // 2
+
+            if abs(cx - region_center_x) < region_roi.shape[1] * 0.1:
+                alignment = "center"
+            elif cx < region_roi.shape[1] * 0.3:
+                alignment = "left"
+            else:
+                alignment = "right"
+        else:
+            alignment = "unknown"
+
+        characteristics = {
+            "font_style": font_style,
+            "stroke_width": stroke_width,
+            "has_serifs": has_serifs,
+            "text_color": text_color,
+            "hex_color": hex_color,
+            "alignment": alignment,
+            "confidence": 70,
+        }
+
+        if debug_folder:
+            os.makedirs(debug_folder, exist_ok=True)
+            cv2.imwrite(
+                os.path.join(debug_folder, f"text_analysis_{region_index}_edges.jpg"),
+                edges,
+            )
+
+        return {"detected": True, "characteristics": characteristics}
+
+    except Exception as e:
+        print(f"  Text analysis error: {e}")
+        return {"detected": False, "characteristics": {}, "error": str(e)}
+
+
 def identify_region_type_from_left(
     image, x, y, w, h, debug_folder=None, region_index=0
 ):
@@ -281,30 +404,52 @@ def inpaint_regions_from_json(image, json_data, output_folder=None):
 
                 # If value exists, render it on the region
                 if value and len(value) > 0:
-                    # Get text color from color_analysis (should be black/dark)
-                    text_color = (0, 0, 0)  # Default to black (BGR format)
-                    if "color_analysis" in region and region["color_analysis"].get(
-                        "color_detected"
-                    ):
-                        color_chars = region["color_analysis"]["characteristics"]
-                        # If it's black/dark gray, use dark color
-                        if color_chars.get("color_name") == "black":
-                            text_color = (0, 0, 0)
-                        else:
-                            text_color = (50, 50, 50)  # Dark gray if not pure black
+                    # Get text characteristics if available
+                    text_analysis = region.get("text_analysis", {})
+                    text_chars = text_analysis.get("characteristics", {})
+
+                    # Determine text color
+                    text_color = (0, 0, 0)  # Default to black
+                    if text_chars.get("hex_color"):
+                        hex_color = text_chars["hex_color"].lstrip("#")
+                        r = int(hex_color[0:2], 16)
+                        g = int(hex_color[2:4], 16)
+                        b = int(hex_color[4:6], 16)
+                        text_color = (b, g, r)  # Convert to BGR for OpenCV
+
+                    # Determine font based on detected characteristics
+                    font = (
+                        cv2.FONT_HERSHEY_DUPLEX
+                        if text_chars.get("font_style") == "serif"
+                        else cv2.FONT_HERSHEY_SIMPLEX
+                    )
+
+                    # Determine thickness based on stroke width
+                    stroke_width = text_chars.get("stroke_width", "normal")
+                    if stroke_width == "bold":
+                        font_thickness = max(2, int(h / 30))
+                    elif stroke_width == "light":
+                        font_thickness = max(1, int(h / 50))
+                    else:
+                        font_thickness = max(1, int(h / 40))
 
                     # Calculate font size based on region height
                     font_scale = max(0.3, min(1.0, h / 30.0))
-                    font_thickness = max(1, int(h / 40))
-                    font = cv2.FONT_HERSHEY_SIMPLEX
 
-                    # Get text size to center it
+                    # Get text size
                     text_size = cv2.getTextSize(
                         value, font, font_scale, font_thickness
                     )[0]
 
-                    # Calculate position to center text in region
-                    text_x = x + max(2, (w - text_size[0]) // 2)
+                    # Calculate position based on detected alignment
+                    alignment = text_chars.get("alignment", "left")
+                    if alignment == "center":
+                        text_x = x + max(2, (w - text_size[0]) // 2)
+                    elif alignment == "right":
+                        text_x = x + max(2, w - text_size[0] - 2)
+                    else:  # left
+                        text_x = x + 2
+
                     text_y = y + max(text_size[1] + 2, (h + text_size[1]) // 2)
 
                     # Put text on the image
@@ -318,9 +463,13 @@ def inpaint_regions_from_json(image, json_data, output_folder=None):
                         font_thickness,
                     )
 
+                    print(f"  ✓ Text rendered: '{value}'")
+                    print(f"    - Font: {text_chars.get('font_style', 'unknown')}")
                     print(
-                        f"  ✓ Text rendered: '{value}' (color: {text_color}, size: {font_scale:.2f})"
+                        f"    - Color: {text_chars.get('text_color', 'unknown')} {text_chars.get('hex_color', '')}"
                     )
+                    print(f"    - Alignment: {alignment}")
+                    print(f"    - Thickness: {font_thickness}")
                 else:
                     print(f"  - No value to render")
 
@@ -348,8 +497,8 @@ def inpaint_regions_from_json(image, json_data, output_folder=None):
     return restored_image
 
 
-def collect_user_values_for_regions(enriched_regions):
-    print("\n=== Interactive Value Collection ===")
+def collect_user_values_for_regions(image, enriched_regions, output_folder=None):
+    print("\n=== Interactive Value Collection and Text Analysis ===")
     print("For each detected region, enter the actual value.\n")
 
     for region in enriched_regions:
@@ -368,6 +517,23 @@ def collect_user_values_for_regions(enriched_regions):
         if user_value:
             region["value"] = user_value
             print(f"  ✓ Value set: '{user_value}'")
+
+            # Analyze text characteristics from the region
+            value_roi = image[y : y + h, x : x + w]
+            text_chars = detect_text_characteristics_from_region(
+                value_roi, index, output_folder
+            )
+            region["text_analysis"] = text_chars
+
+            if text_chars["detected"]:
+                chars = text_chars["characteristics"]
+                print(f"  ✓ Text characteristics detected:")
+                print(f"    - Font: {chars.get('font_style', 'unknown')}")
+                print(f"    - Stroke: {chars.get('stroke_width', 'unknown')}")
+                print(
+                    f"    - Color: {chars.get('text_color', 'unknown')} ({chars.get('hex_color', '#000000')})"
+                )
+                print(f"    - Alignment: {chars.get('alignment', 'unknown')}")
         else:
             region["value"] = ""
             print(f"  ⊘ Skipped")
@@ -408,7 +574,9 @@ def execute_ml_steps_generation(input_file, output_folder=None):
         enriched_regions.append(enriched_region)
         print(f"  Label: '{label}'")
 
-    enriched_regions = collect_user_values_for_regions(enriched_regions)
+    enriched_regions = collect_user_values_for_regions(
+        image, enriched_regions, output_folder
+    )
 
     output_path = None
     json_path = None
