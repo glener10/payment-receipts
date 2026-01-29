@@ -1,4 +1,4 @@
-# python src/usecases/payment_receipt_generation/ml_steps_generation.py -i 'dataset_just_banks_and_random_name/nu/0ercxg1eypyb_1766015257435.jpeg' -o 'output'
+# python src/usecases/payment_receipt_generation/ml_steps_generation.py -i 'dataset_just_banks_and_random_name/nu/0ercxg1eypyb_1766015257435.jpeg'
 import os
 import sys
 import cv2
@@ -351,7 +351,7 @@ def collect_user_values_for_regions(image, enriched_regions, output_folder=None)
     return enriched_regions
 
 
-def execute_ml_steps_generation(input_file, output_folder=None):
+def execute_ml_steps_generation(input_file, output_folder):
     if not os.path.exists(input_file):
         print(f"Error: Input file '{input_file}' not found")
         return None
@@ -380,28 +380,25 @@ def execute_ml_steps_generation(input_file, output_folder=None):
         image, enriched_regions, output_folder
     )
 
-    output_path = json_path = restored_image_path = None
+    os.makedirs(output_folder, exist_ok=True)
+    base_name = os.path.splitext(os.path.basename(input_file))[0]
 
-    if output_folder:
-        os.makedirs(output_folder, exist_ok=True)
-        base_name = os.path.splitext(os.path.basename(input_file))[0]
+    output_path = os.path.join(output_folder, f"{base_name}_detection.jpg")
+    cv2.imwrite(output_path, debug_image)
 
-        output_path = os.path.join(output_folder, f"{base_name}_detection.jpg")
-        cv2.imwrite(output_path, debug_image)
+    json_path = os.path.join(output_folder, f"{base_name}_analysis.json")
+    result_json = {
+        "input_file": input_file,
+        "image_dimensions": {"width": image.shape[1], "height": image.shape[0]},
+        "total_regions": len(enriched_regions),
+        "regions": enriched_regions,
+    }
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(result_json, f, indent=2, ensure_ascii=False)
 
-        json_path = os.path.join(output_folder, f"{base_name}_analysis.json")
-        result_json = {
-            "input_file": input_file,
-            "image_dimensions": {"width": image.shape[1], "height": image.shape[0]},
-            "total_regions": len(enriched_regions),
-            "regions": enriched_regions,
-        }
-        with open(json_path, "w", encoding="utf-8") as f:
-            json.dump(result_json, f, indent=2, ensure_ascii=False)
-
-        restored_image = inpaint_regions_from_json(image, result_json, output_folder)
-        restored_image_path = os.path.join(output_folder, f"{base_name}_restored.jpg")
-        cv2.imwrite(restored_image_path, restored_image)
+    restored_image = inpaint_regions_from_json(image, result_json, output_folder)
+    restored_image_path = os.path.join(output_folder, f"{base_name}_restored.jpg")
+    cv2.imwrite(restored_image_path, restored_image)
 
     return {
         "input_file": input_file,
@@ -420,6 +417,6 @@ if __name__ == "__main__":
         description="Detect masked regions in payment receipt images"
     )
     parser.add_argument("-i", "--input", required=True, help="Input image file path")
-    parser.add_argument("-o", "--output")
+    parser.add_argument("-o", "--output", default="output")
     args = parser.parse_args()
     result = execute_ml_steps_generation(args.input, args.output)
