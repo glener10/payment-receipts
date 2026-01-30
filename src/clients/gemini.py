@@ -238,3 +238,70 @@ def generate_payment_receipt_with_gemini(templates, output_path):
         error_msg = f"error to generate payment receipt image: {str(e)}"
         print(f"{error_msg}")
         return {"success": False, "error": error_msg}
+
+
+def generate_payment_receipt_with_json_instructions(image_path, json_data, output_path):
+    try:
+        genai.configure(api_key=gemini_api_key)
+
+        generation_config = {
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": 8192,
+        }
+
+        prompt = get_generate_payment_receipt_prompt()
+
+        json_instructions = f"""
+IMPORTANT INSTRUCTIONS:
+
+1. Remove all black masked/censored areas from the image
+2. Replace each removed area with the corresponding text value from the JSON below
+3. Use RED color (#FF0000) for all inserted text
+4. Align all inserted text to the RIGHT, following the alignment pattern of other visible unmasked values in the document
+
+Field values to insert:
+{json.dumps(json_data, ensure_ascii=False, indent=2)}
+
+Generate a clean payment receipt image with the masked areas removed and replaced with the provided values in red text.
+"""
+
+        with open(image_path, "rb") as f:
+            image_data = f.read()
+
+        file_ext = Path(image_path).suffix.lower()
+        mime_type = get_mime_type(file_ext)
+
+        contents = [
+            prompt,
+            json_instructions,
+            {"mime_type": mime_type, "data": image_data},
+        ]
+
+        response = genai.GenerativeModel(
+            model_name="gemini-2.5-flash-image", generation_config=generation_config
+        ).generate_content(contents=contents)
+
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+
+        for part in response.parts:
+            if part.inline_data is not None and len(part.inline_data.data) > 0:
+                with open(output_path, "wb") as f:
+                    f.write(part.inline_data.data)
+                return {
+                    "success": True,
+                    "output_path": output_path,
+                    "mime_type": part.inline_data.mime_type,
+                }
+
+        return {"success": False, "error": "no image data in response"}
+
+    except Exception as e:
+        error_msg = (
+            f"error to generate payment receipt with json instructions: {str(e)}"
+        )
+        print(f"{error_msg}")
+        return {"success": False, "error": error_msg}

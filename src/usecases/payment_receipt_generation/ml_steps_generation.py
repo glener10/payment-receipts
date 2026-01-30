@@ -10,6 +10,8 @@ if __name__ == "__main__":
         0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
     )
 
+from src.clients.gemini import generate_payment_receipt_with_json_instructions
+
 
 def identify_region_type_from_left(image, x, y, w, h, debug_folder, region_index=0):
     if min(x, 350) < 10 or (x - 5) <= 0 or (y + h) <= y:
@@ -155,12 +157,22 @@ def execute_ml_steps_generation(input_file, output_folder):
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(result_json, f, indent=2, ensure_ascii=False)
 
+    gemini_output_path = os.path.join(output_folder, f"{base_name}_final_generated.jpg")
+    gemini_result = generate_payment_receipt_with_json_instructions(
+        output_path, result_json, gemini_output_path
+    )
+    print(f"Gemini generation result: {gemini_result}")
+
     return {
         "input_file": input_file,
         "detected_regions": detected_regions,
         "enriched_regions": enriched_regions,
         "debug_image_path": output_path,
         "json_path": json_path,
+        "gemini_output_path": gemini_result.get("output_path")
+        if gemini_result.get("success")
+        else None,
+        "gemini_result": gemini_result,
     }
 
 
